@@ -46,6 +46,33 @@ diesel::table! {
 }
 
 diesel::table! {
+    backtest_jobs (id) {
+        id -> Uuid,
+        #[max_length = 255]
+        job_id -> Varchar,
+        #[max_length = 50]
+        symbol -> Varchar,
+        #[max_length = 50]
+        exchange -> Varchar,
+        risk_aversion -> Numeric,
+        inventory_target -> Numeric,
+        order_size -> Numeric,
+        initial_capital -> Numeric,
+        commission_rate -> Numeric,
+        start_date -> Nullable<Timestamptz>,
+        end_date -> Nullable<Timestamptz>,
+        #[max_length = 20]
+        status -> Varchar,
+        progress -> Numeric,
+        created_at -> Timestamptz,
+        started_at -> Nullable<Timestamptz>,
+        completed_at -> Nullable<Timestamptz>,
+        error_message -> Nullable<Text>,
+        result_id -> Nullable<Uuid>,
+    }
+}
+
+diesel::table! {
     backtest_position_history (id) {
         id -> Uuid,
         backtest_result_id -> Uuid,
@@ -661,6 +688,7 @@ diesel::table! {
 
 diesel::joinable!(backtest_drawdown_periods -> backtest_results (backtest_result_id));
 diesel::joinable!(backtest_equity_curve -> backtest_results (backtest_result_id));
+diesel::joinable!(backtest_jobs -> backtest_results (result_id));
 diesel::joinable!(backtest_position_history -> backtest_results (backtest_result_id));
 diesel::joinable!(backtest_report_access_log -> backtest_reports (report_id));
 diesel::joinable!(backtest_reports -> backtest_results (backtest_result_id));
@@ -680,6 +708,7 @@ diesel::joinable!(strategy_parameters -> strategies (strategy_id));
 diesel::allow_tables_to_appear_in_same_query!(
     backtest_drawdown_periods,
     backtest_equity_curve,
+    backtest_jobs,
     backtest_position_history,
     backtest_report_access_log,
     backtest_reports,
