@@ -54,8 +54,6 @@ diesel::table! {
         symbol -> Varchar,
         #[max_length = 50]
         exchange -> Varchar,
-        #[max_length = 50]
-        strategy_type -> Varchar,
         risk_aversion -> Numeric,
         inventory_target -> Numeric,
         order_size -> Numeric,
@@ -71,9 +69,18 @@ diesel::table! {
         completed_at -> Nullable<Timestamptz>,
         error_message -> Nullable<Text>,
         result_id -> Nullable<Uuid>,
+        #[max_length = 50]
+        strategy_type -> Varchar,
         last_heartbeat -> Nullable<Timestamptz>,
         current_generation -> Nullable<Int4>,
         total_generations -> Nullable<Int4>,
+        #[max_length = 100]
+        optimization_method -> Varchar,
+        population_size -> Nullable<Int4>,
+        generations -> Nullable<Int4>,
+        #[max_length = 50]
+        current_phase -> Nullable<Varchar>,
+        phase_details -> Nullable<Jsonb>,
     }
 }
 
