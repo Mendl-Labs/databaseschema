@@ -8,9 +8,18 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, deadpool};
 use dotenv::dotenv;
 use tokio_retry::{strategy::{jitter, ExponentialBackoff}, Retry};
+use tokio::time::{timeout, Duration};
 use std::{env, sync::Arc};
 
+/// Default timeout for acquiring database connections (10 seconds)
+/// This prevents indefinite blocking if the pool is exhausted
+const CONNECTION_TIMEOUT_SECS: u64 = 10;
+
 /// Function to create a connection pool using diesel-async's built-in manager
+/// 
+/// # Pool Configuration
+/// - max_size: 5 connections per pod (3 pods × 5 = 15 total)
+/// - Designed for Kubernetes deployment with horizontal scaling
 pub fn create_timescale_connection_pool() -> deadpool::Pool<AsyncPgConnection> {
     dotenv().ok();
     println!("Creating database connection pool");
@@ -24,18 +33,30 @@ pub fn create_timescale_connection_pool() -> deadpool::Pool<AsyncPgConnection> {
         .expect("Failed to create database pool")
 }
 
-/// Function to get a connection from the pool
+/// Function to get a connection from the pool with timeout and retry
+/// 
+/// # Deadlock Prevention
+/// - Timeout prevents indefinite waiting if pool is exhausted
+/// - Retry with exponential backoff handles transient failures
+/// - Logs warnings for debugging pool exhaustion issues
 pub async fn get_timescale_connection(
     pool: Arc<deadpool::Pool<AsyncPgConnection>>,
 ) -> Result<deadpool::Object<AsyncPgConnection>> {
-    println!("Getting database connection from pool");
     let retry_strategy = ExponentialBackoff::from_millis(10).map(jitter).take(3);
 
     Retry::spawn(retry_strategy, || async {
-        Ok(pool.get().await.map_err(|e| {
-            eprintln!("Failed to get database connection from pool: {}", e);
-            e
-        }).expect("Failed to get database connection from pool"))
+        // Wrap pool.get() in timeout to prevent indefinite blocking
+        match timeout(Duration::from_secs(CONNECTION_TIMEOUT_SECS), pool.get()).await {
+            Ok(Ok(conn)) => Ok(conn),
+            Ok(Err(e)) => {
+                eprintln!("[DEADLOCK WARNING] Pool error - possible pool exhaustion: {}", e);
+                Err(anyhow::anyhow!("Database pool error: {}", e))
+            }
+            Err(_) => {
+                eprintln!("[DEADLOCK WARNING] Connection timeout after {}s - pool may be exhausted", CONNECTION_TIMEOUT_SECS);
+                Err(anyhow::anyhow!("Connection pool timeout after {}s", CONNECTION_TIMEOUT_SECS))
+            }
+        }
     })
     .await
 }
