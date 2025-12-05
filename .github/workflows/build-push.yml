@@ -93,14 +93,44 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Run Migrations
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Fetch secrets from Azure Key Vault
       env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        AZURE_KEYVAULT_NAME: ${{ secrets.AZURE_KEYVAULT_NAME }}
+      run: |
+        echo "Fetching database secrets from Azure Key Vault..."
+        
+        for secret in POSTGRES-HOST POSTGRES-PORT POSTGRES-USER POSTGRES-PASSWORD POSTGRES-DB; do
+          env_name=$(echo "$secret" | tr '-' '_')
+          value=$(az keyvault secret show --vault-name "$AZURE_KEYVAULT_NAME" --name "$secret" --query value -o tsv)
+          
+          if [ -z "$value" ]; then
+            echo "[FAIL] Failed to fetch secret $secret"
+            exit 1
+          fi
+          
+          # Mask the secret in logs
+          echo "::add-mask::$value"
+          echo "${env_name}=${value}" >> $GITHUB_ENV
+          echo "[OK] Fetched $secret"
+        done
+        
+        echo "[OK] All secrets fetched successfully"
+
+    - name: Run Migrations
       run: |
         SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
         IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHORT_SHA}"
         
+        # Build DATABASE_URL from components
+        DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
+        
         echo "Running migrations with image: ${IMAGE}"
+        echo "Database: ${POSTGRES_DB} @ ${POSTGRES_HOST}:${POSTGRES_PORT}"
         
         docker pull "${IMAGE}"
         docker run --rm \
