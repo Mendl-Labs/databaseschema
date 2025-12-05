@@ -11,7 +11,6 @@ use anyhow::Error;
 use tokio_retry::{strategy::{jitter, ExponentialBackoff}, Retry};
 use std::sync::Arc;
 use chrono::{DateTime, Utc, Duration};
-use tracing::{info, error, warn};
 use std::time::Instant;
 
 /// Get 1-minute candles for a symbol and exchange

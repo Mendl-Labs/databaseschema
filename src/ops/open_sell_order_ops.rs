@@ -6,7 +6,6 @@ use diesel::{prelude::*, result::Error};
 use diesel::QueryDsl;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use tokio_retry::{strategy::{jitter, ExponentialBackoff}, Retry};
-use tracing::{debug, warn, info, error};
 use std::{collections::BTreeMap, sync::Arc};
 
 pub async fn create_open_sell_order(pool: Arc<deadpool::Pool<AsyncPgConnection>>, order: NewOpenSellOrder) -> Result<OpenSellOrder, Error> {

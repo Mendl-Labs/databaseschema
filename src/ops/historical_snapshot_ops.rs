@@ -4,7 +4,6 @@ use diesel_async::AsyncPgConnection;
 use diesel::{prelude::*, result::Error};
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use tokio_retry::{strategy::{jitter, ExponentialBackoff}, Retry};
-use tracing::{info, error, warn};
 use std::sync::Arc;
 
 pub async fn create_historical_snapshot(pool: Arc<deadpool::Pool<AsyncPgConnection>>, snapshots: Vec<NewHistoricalSnapshot>) -> Result<Vec<HistoricalSnapshot>, Error> {

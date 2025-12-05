@@ -6,7 +6,6 @@ use diesel_async::RunQueryDsl;
 use tokio_retry::{strategy::{jitter, ExponentialBackoff}, Retry};
 use std::sync::Arc;
 use std::time::Instant;
-use tracing::{info, error, debug};
 
 pub async fn create_exchange(pool: Arc<deadpool::Pool<AsyncPgConnection>>, new_exchange: NewExchange) -> Result<Exchange, Error> {
     let start_time = Instant::now();

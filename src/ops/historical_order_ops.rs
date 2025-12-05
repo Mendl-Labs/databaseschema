@@ -6,7 +6,6 @@ use diesel_async::AsyncConnection;
 use diesel_async::RunQueryDsl;
 use tokio_retry::{strategy::{jitter, ExponentialBackoff}, Retry};
 use std::sync::Arc;
-use tracing::{info, error, warn, debug};
 use std::time::Instant;
 
 pub async fn create_historical_order(pool: Arc<deadpool::Pool<AsyncPgConnection>>, historical_order: NewHistoricalOrder) -> Result<HistoricalOrder, Error> {

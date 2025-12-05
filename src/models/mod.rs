@@ -13,3 +13,4 @@ pub mod sim_trade;
 pub mod strategy;
 pub mod strategy_order;
 pub mod trade;
+pub mod wallet_balance;
