@@ -77,7 +77,7 @@ jobs:
 
   run-migrations:
     name: Run Database Migrations
-    runs-on: [self-hosted, windows, x64]
+    runs-on: ubuntu-latest
     needs: build-and-push
     if: github.event.inputs.run_migrations != 'false'
     timeout-minutes: 15
@@ -86,170 +86,36 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Check Kubernetes Connection
-      shell: powershell
-      run: |
-        Write-Host "Verifying Kubernetes connection..."
-        kubectl cluster-info
-        kubectl get nodes
-        Write-Host "[OK] Kubernetes connection verified"
-
-    - name: Fetch Secrets from Azure Key Vault
-      shell: powershell
-      env:
-        AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-        AZURE_KEYVAULT_NAME: ${{ secrets.AZURE_KEYVAULT_NAME }}
-      run: |
-        Write-Host "Fetching secrets from Azure Key Vault..."
-        
-        try {
-          if ([string]::IsNullOrWhiteSpace($env:AZURE_CREDENTIALS)) {
-            throw "AZURE_CREDENTIALS secret is empty or not set"
-          }
-          
-          $creds = $env:AZURE_CREDENTIALS | ConvertFrom-Json -ErrorAction Stop
-          
-          if (-not $creds.clientId -or -not $creds.clientSecret -or -not $creds.tenantId) {
-            throw "Invalid Azure credentials format"
-          }
-          
-          Write-Host "[OK] Azure credentials parsed successfully"
-        } catch {
-          Write-Error "Failed to parse Azure credentials: $($_.Exception.Message)"
-          exit 1
-        }
-        
-        # Authenticate with Azure CLI
-        try {
-          Write-Host "[INFO] Authenticating with Azure..."
-          az login --service-principal `
-            --username $creds.clientId `
-            --password $creds.clientSecret `
-            --tenant $creds.tenantId `
-            --output json 2>&1 | Out-Null
-          
-          if ($LASTEXITCODE -ne 0) {
-            throw "Azure CLI login failed"
-          }
-          
-          Write-Host "[OK] Successfully authenticated with Azure"
-        } catch {
-          Write-Error "Azure authentication failed: $_"
-          exit 1
-        }
-        
-        # Fetch database secrets
-        $secretNames = @("POSTGRES-HOST","POSTGRES-PORT","POSTGRES-USER","POSTGRES-PASSWORD","POSTGRES-DB")
-        
-        foreach ($secretName in $secretNames) {
-          try {
-            $envName = $secretName -replace "-", "_"
-            $value = az keyvault secret show --vault-name $env:AZURE_KEYVAULT_NAME --name $secretName --query value -o tsv 2>&1
-            
-            if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($value)) {
-              Write-Error "[FAIL] Failed to fetch secret $secretName"
-              exit 1
-            }
-            
-            $cleanValue = $value.Trim()
-            echo "${envName}=${cleanValue}" >> $env:GITHUB_ENV
-            Write-Host "[OK] Fetched $secretName"
-          } catch {
-            Write-Error "[FAIL] Error fetching $secretName : $_"
-            exit 1
-          }
-        }
-        
-        Write-Host "[OK] All secrets fetched successfully"
-
-    - name: Create Migration Job YAML
-      shell: powershell
-      run: |
-        $shortSha = "${{ github.sha }}".Substring(0, 7)
-        $databaseUrl = "postgresql://$($env:POSTGRES_USER):$($env:POSTGRES_PASSWORD)@$($env:POSTGRES_HOST):$($env:POSTGRES_PORT)/$($env:POSTGRES_DB)"
-        
-        $jobYaml = @"
-        apiVersion: batch/v1
-        kind: Job
-        metadata:
-          name: database-migration
-          namespace: ${{ env.NAMESPACE }}
-          labels:
-            app.kubernetes.io/name: databaseschema
-            app.kubernetes.io/component: migration
-        spec:
-          ttlSecondsAfterFinished: 300
-          backoffLimit: 3
-          template:
-            spec:
-              restartPolicy: Never
-              imagePullSecrets:
-                - name: ghcr-secret
-              containers:
-                - name: migration
-                  image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$shortSha
-                  command: ["diesel", "migration", "run"]
-                  env:
-                    - name: DATABASE_URL
-                      value: "$databaseUrl"
-                  resources:
-                    requests:
-                      memory: "128Mi"
-                      cpu: "100m"
-                    limits:
-                      memory: "256Mi"
-                      cpu: "500m"
-        "@
-        
-        # Remove leading whitespace from each line
-        $jobYaml = ($jobYaml -split "`n" | ForEach-Object { $_.TrimStart() }) -join "`n"
-        $jobYaml | Out-File -FilePath "migration-job.yaml" -Encoding utf8
-        Write-Host "[OK] Migration job YAML created"
+    - name: Login to GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Run Migrations
-      shell: powershell
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
       run: |
-        Write-Host "Running database migrations..."
+        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+        IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHORT_SHA}"
         
-        # Create namespace if it doesn't exist
-        kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+        echo "Running migrations with image: ${IMAGE}"
         
-        # Create image pull secret for GHCR
-        kubectl create secret docker-registry ghcr-secret --docker-server=ghcr.io --docker-username=${{ github.actor }} --docker-password=${{ secrets.GITHUB_TOKEN }} --namespace=${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+        docker pull "${IMAGE}"
+        docker run --rm \
+          -e DATABASE_URL="${DATABASE_URL}" \
+          "${IMAGE}" \
+          diesel migration run
         
-        # Delete any existing migration job
-        kubectl delete job database-migration -n ${{ env.NAMESPACE }} --ignore-not-found
-        
-        # Apply migration job
-        kubectl apply -f migration-job.yaml
-        
-        Write-Host "[INFO] Waiting for migration job to complete..."
-        $result = kubectl wait --for=condition=complete job/database-migration -n ${{ env.NAMESPACE }} --timeout=300s 2>&1
-        
-        if ($LASTEXITCODE -eq 0) {
-          Write-Host "[OK] Migrations completed successfully!"
-          Write-Host ""
-          Write-Host "[INFO] Migration logs:"
-          kubectl logs job/database-migration -n ${{ env.NAMESPACE }}
-        } else {
-          Write-Host "[FAIL] Migration job failed or timed out"
-          Write-Host ""
-          Write-Host "[DEBUG] Migration logs:"
-          kubectl logs job/database-migration -n ${{ env.NAMESPACE }}
-          Write-Host ""
-          Write-Host "[DEBUG] Job status:"
-          kubectl describe job/database-migration -n ${{ env.NAMESPACE }}
-          exit 1
-        }
+        echo "[OK] Migrations completed successfully!"
 
     - name: Migration Summary
-      shell: powershell
       run: |
-        $shortSha = "${{ github.sha }}".Substring(0, 7)
-        Write-Host "=========================================="
-        Write-Host "Migration Summary"
-        Write-Host "=========================================="
-        Write-Host "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$shortSha"
-        Write-Host "Database: $($env:POSTGRES_DB) @ $($env:POSTGRES_HOST)"
-        Write-Host "Status: Completed"
-        Write-Host "=========================================="
+        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+        echo "=========================================="
+        echo "Migration Summary"
+        echo "=========================================="
+        echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHORT_SHA}"
+        echo "Status: Completed"
+        echo "=========================================="
