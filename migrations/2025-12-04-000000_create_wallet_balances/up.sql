@@ -2,7 +2,7 @@
 -- This is a TimescaleDB hypertable for time-series balance tracking
 
 CREATE TABLE wallet_balances (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID NOT NULL DEFAULT gen_random_uuid(),
     -- Exchange and user identification
     exchange VARCHAR(50) NOT NULL,
     user_id VARCHAR(255) NOT NULL DEFAULT 'default_user',
@@ -33,7 +33,10 @@ CREATE TABLE wallet_balances (
     -- Timestamps
     timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    
+    -- Primary key must include timestamp for TimescaleDB hypertable
+    PRIMARY KEY (id, timestamp)
 );
 
 -- Create hypertable for time-series data (balance history)
