@@ -256,27 +256,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    candles (timestamp, symbol, timeframe) {
-        timestamp -> Timestamptz,
-        #[max_length = 20]
-        symbol -> Varchar,
-        #[max_length = 50]
-        exchange -> Varchar,
-        security_id -> Uuid,
-        exchange_id -> Uuid,
-        open_price -> Numeric,
-        high_price -> Numeric,
-        low_price -> Numeric,
-        close_price -> Numeric,
-        volume -> Numeric,
-        trade_count -> Int4,
-        #[max_length = 10]
-        timeframe -> Varchar,
-        created_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
     exchanges (exchange_id) {
         created_at -> Timestamptz,
         exchange_id -> Uuid,
@@ -706,8 +685,6 @@ diesel::joinable!(backtest_report_access_log -> backtest_reports (report_id));
 diesel::joinable!(backtest_reports -> backtest_results (backtest_result_id));
 diesel::joinable!(backtest_results -> strategy_instances (strategy_instance_id));
 diesel::joinable!(backtest_trades -> backtest_results (backtest_result_id));
-diesel::joinable!(candles -> exchanges (exchange_id));
-diesel::joinable!(candles -> securities (security_id));
 diesel::joinable!(historical_orders -> exchanges (exchange_id));
 diesel::joinable!(historical_orders -> securities (security_id));
 diesel::joinable!(historical_snapshot -> exchanges (exchange_id));
@@ -758,7 +735,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     backtest_reports,
     backtest_results,
     backtest_trades,
-    candles,
     current_balances,
     exchanges,
     historical_orders,
