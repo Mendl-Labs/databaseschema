@@ -717,6 +717,38 @@ diesel::joinable!(optimization_runs -> strategies (strategy_id));
 diesel::joinable!(strategy_instances -> strategies (strategy_id));
 diesel::joinable!(strategy_parameters -> strategies (strategy_id));
 
+diesel::table! {
+    wallet_balances (exchange, asset, wallet_type, wallet_id, timestamp) {
+        exchange -> Varchar,
+        asset -> Varchar,
+        wallet_type -> Varchar,
+        wallet_id -> Varchar,
+        timestamp -> Timestamptz,
+        free -> Numeric,
+        locked -> Numeric,
+        total -> Numeric,
+        sequence -> Int8,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    current_balances (exchange, asset, wallet_type, wallet_id) {
+        exchange -> Varchar,
+        asset -> Varchar,
+        wallet_type -> Varchar,
+        wallet_id -> Varchar,
+        timestamp -> Timestamptz,
+        free -> Numeric,
+        locked -> Numeric,
+        total -> Numeric,
+        sequence -> Int8,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
 diesel::allow_tables_to_appear_in_same_query!(
     backtest_drawdown_periods,
     backtest_equity_curve,
@@ -727,6 +759,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     backtest_results,
     backtest_trades,
     candles,
+    current_balances,
     exchanges,
     historical_orders,
     historical_snapshot,
@@ -747,4 +780,5 @@ diesel::allow_tables_to_appear_in_same_query!(
     strategy_orders,
     strategy_parameters,
     trades,
+    wallet_balances,
 );

@@ -257,6 +257,7 @@ dependencies = [
  "futures-util",
  "mockall",
  "native-tls",
+ "once_cell",
  "postgres-native-tls",
  "rand",
  "serde",

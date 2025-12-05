@@ -6,7 +6,6 @@ use diesel::{prelude::*, result::Error};
 use diesel::QueryDsl;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use tokio_retry::{strategy::{jitter, ExponentialBackoff}, Retry};
-use tracing::{info, error, debug, warn};
 use std::{cmp::Reverse, collections::BTreeMap, sync::Arc};
 
 pub async fn create_open_buy_order(pool: Arc<deadpool::Pool<AsyncPgConnection>>, order: NewOpenBuyOrder) -> Result<OpenBuyOrder, Error> {

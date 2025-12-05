@@ -1,3 +1,5 @@
+#[macro_use]
+pub mod logging_facade;
 pub mod ops;
 pub mod schema;
 pub mod models;
@@ -11,6 +13,8 @@ use tokio_retry::{strategy::{jitter, ExponentialBackoff}, Retry};
 use tokio::time::{timeout, Duration};
 use std::{env, sync::Arc};
 
+use logging_facade::DATABASE_LOGGER;
+
 /// Default timeout for acquiring database connections (10 seconds)
 /// This prevents indefinite blocking if the pool is exhausted
 const CONNECTION_TIMEOUT_SECS: u64 = 10;
@@ -22,7 +26,7 @@ const CONNECTION_TIMEOUT_SECS: u64 = 10;
 /// - Designed for Kubernetes deployment with horizontal scaling
 pub fn create_timescale_connection_pool() -> deadpool::Pool<AsyncPgConnection> {
     dotenv().ok();
-    println!("Creating database connection pool");
+    log_info!(DATABASE_LOGGER, "Creating database connection pool");
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let config = AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
@@ -49,11 +53,11 @@ pub async fn get_timescale_connection(
         match timeout(Duration::from_secs(CONNECTION_TIMEOUT_SECS), pool.get()).await {
             Ok(Ok(conn)) => Ok(conn),
             Ok(Err(e)) => {
-                eprintln!("[DEADLOCK WARNING] Pool error - possible pool exhaustion: {}", e);
+                log_warn!(DATABASE_LOGGER, "[DEADLOCK WARNING] Pool error - possible pool exhaustion: {}", e);
                 Err(anyhow::anyhow!("Database pool error: {}", e))
             }
             Err(_) => {
-                eprintln!("[DEADLOCK WARNING] Connection timeout after {}s - pool may be exhausted", CONNECTION_TIMEOUT_SECS);
+                log_warn!(DATABASE_LOGGER, "[DEADLOCK WARNING] Connection timeout after {}s - pool may be exhausted", CONNECTION_TIMEOUT_SECS);
                 Err(anyhow::anyhow!("Connection pool timeout after {}s", CONNECTION_TIMEOUT_SECS))
             }
         }
