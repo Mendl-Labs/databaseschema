@@ -1,4 +1,4 @@
-name: Build, Push and Run Database Migrations
+name: Build and Push Database Schema Image
 
 on:
   push:
@@ -11,11 +11,6 @@ on:
       - 'diesel.toml'
       - '.github/workflows/build-push.yml'
   workflow_dispatch:
-    inputs:
-      run_migrations:
-        description: 'Run database migrations after build'
-        type: boolean
-        default: true
 
 env:
   REGISTRY: ghcr.io
@@ -76,16 +71,10 @@ jobs:
         echo "=========================================="
 
   run-migrations:
-    name: Run Database Migrations
-    runs-on: ubuntu-latest
     needs: build-and-push
-    if: github.event.inputs.run_migrations != 'false'
-    timeout-minutes: 15
+    runs-on: [self-hosted, linux, x64]
     
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
     - name: Login to GHCR
       uses: docker/login-action@v3
       with:
@@ -93,59 +82,19 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Azure Login
-      uses: azure/login@v2
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-    - name: Fetch secrets from Azure Key Vault
-      env:
-        AZURE_KEYVAULT_NAME: ${{ secrets.AZURE_KEYVAULT_NAME }}
-      run: |
-        echo "Fetching database secrets from Azure Key Vault..."
-        
-        for secret in POSTGRES-HOST POSTGRES-PORT POSTGRES-USER POSTGRES-PASSWORD POSTGRES-DB; do
-          env_name=$(echo "$secret" | tr '-' '_')
-          value=$(az keyvault secret show --vault-name "$AZURE_KEYVAULT_NAME" --name "$secret" --query value -o tsv)
-          
-          if [ -z "$value" ]; then
-            echo "[FAIL] Failed to fetch secret $secret"
-            exit 1
-          fi
-          
-          # Mask the secret in logs
-          echo "::add-mask::$value"
-          echo "${env_name}=${value}" >> $GITHUB_ENV
-          echo "[OK] Fetched $secret"
-        done
-        
-        echo "[OK] All secrets fetched successfully"
-
     - name: Run Migrations
       run: |
-        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-        IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHORT_SHA}"
-        
-        # Build DATABASE_URL from components
-        DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
-        
-        echo "Running migrations with image: ${IMAGE}"
-        echo "Database: ${POSTGRES_DB} @ ${POSTGRES_HOST}:${POSTGRES_PORT}"
-        
-        docker pull "${IMAGE}"
+        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}
         docker run --rm \
-          -e DATABASE_URL="${DATABASE_URL}" \
-          "${IMAGE}" \
-          diesel migration run
-        
-        echo "[OK] Migrations completed successfully!"
+          --network host \
+          -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}
 
     - name: Migration Summary
       run: |
-        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
         echo "=========================================="
-        echo "Migration Summary"
+        echo "Migrations Completed Successfully"
         echo "=========================================="
-        echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHORT_SHA}"
-        echo "Status: Completed"
+        echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}"
         echo "=========================================="
+
