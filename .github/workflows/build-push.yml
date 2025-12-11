@@ -114,8 +114,9 @@ jobs:
           exit 1
         }
         
-        # Fetch database secrets
+        # Fetch database secrets and store in hashtable
         $secretNames = @("POSTGRES-HOST", "POSTGRES-PORT", "POSTGRES-USER", "POSTGRES-PASSWORD", "POSTGRES-DB")
+        $secrets = @{}
         
         foreach ($secretName in $secretNames) {
           $envName = $secretName -replace "-", "_"
@@ -127,13 +128,14 @@ jobs:
           }
           
           $cleanValue = $value.Trim()
+          $secrets[$envName] = $cleanValue
           Write-Host "::add-mask::$cleanValue"
           Add-Content -Path $env:GITHUB_ENV -Value "$envName=$cleanValue"
           Write-Host "[OK] Fetched secret $envName"
         }
         
-        # Construct DATABASE_URL
-        $databaseUrl = "postgresql://$($env:POSTGRES_USER):$($env:POSTGRES_PASSWORD)@$($env:POSTGRES_HOST):$($env:POSTGRES_PORT)/$($env:POSTGRES_DB)"
+        # Construct DATABASE_URL from fetched values
+        $databaseUrl = "postgresql://$($secrets['POSTGRES_USER']):$($secrets['POSTGRES_PASSWORD'])@$($secrets['POSTGRES_HOST']):$($secrets['POSTGRES_PORT'])/$($secrets['POSTGRES_DB'])"
         Write-Host "::add-mask::$databaseUrl"
         Add-Content -Path $env:GITHUB_ENV -Value "DATABASE_URL=$databaseUrl"
         Write-Host "[OK] DATABASE_URL constructed"
