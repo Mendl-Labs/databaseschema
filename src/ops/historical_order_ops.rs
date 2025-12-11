@@ -272,3 +272,94 @@ pub async fn get_bootstrap_historical_orders(
     
     Ok(bootstrap_orders)
 }
+
+/// Load historical orders sampled evenly across the full time range
+/// Uses ROW_NUMBER() with modular arithmetic - single query that samples every Nth row
+/// This provides coverage of the entire market history while limiting data transfer
+pub async fn get_stratified_historical_orders(
+    pool: Arc<deadpool::Pool<AsyncPgConnection>>,
+    sym: &str,
+    xchange: &str,
+    target_count: usize,
+) -> Result<Vec<HistoricalOrder>, Error> {
+    use diesel::sql_types::{BigInt, Text};
+    
+    let start_time = Instant::now();
+    info!("Loading ~{} orders sampled across full time range for {} on {}", target_count, sym, xchange);
+    
+    // Security: Input validation
+    if sym.is_empty() || sym.len() > 20 {
+        error!("Invalid symbol length: {}", sym.len());
+        return Err(Error::RollbackTransaction);
+    }
+    if xchange.is_empty() || xchange.len() > 50 {
+        error!("Invalid exchange length: {}", xchange.len());
+        return Err(Error::RollbackTransaction);
+    }
+    if target_count == 0 || target_count > 1_000_000 {
+        error!("Invalid target_count: {}", target_count);
+        return Err(Error::RollbackTransaction);
+    }
+    
+    let mut connection = get_timescale_connection(pool.clone())
+        .await
+        .map_err(|e| {
+            error!("Failed to get database connection: {}", e);
+            Error::DatabaseError(
+                diesel::result::DatabaseErrorKind::UnableToSendCommand,
+                Box::new(e.to_string())
+            )
+        })?;
+    
+    // First get total count to calculate sample rate
+    use crate::schema::historical_orders::dsl::*;
+    let total_count: i64 = historical_orders
+        .filter(symbol.eq(sym))
+        .filter(exchange.eq(xchange))
+        .filter(event_type.eq_any(vec!["new", "cancel", "modify"]))
+        .count()
+        .get_result(&mut connection)
+        .await
+        .map_err(|e| {
+            error!("Count query failed: {}", e);
+            e
+        })?;
+    
+    if total_count == 0 {
+        info!("No historical orders found for {} on {}", sym, xchange);
+        return Ok(Vec::new());
+    }
+    
+    // Calculate sample rate: every Nth row
+    // If we have 5M rows and want 400K, take every 12th row (5M/400K ≈ 12)
+    let sample_rate = std::cmp::max(1, (total_count as usize / target_count) as i64);
+    
+    info!("Total rows: {}, sampling every {}th row to get ~{} rows", 
+        total_count, sample_rate, total_count / sample_rate);
+    
+    // Use ROW_NUMBER() with modular arithmetic to sample evenly across full time range
+    // This is efficient because PostgreSQL can use the timestamp index for ordering
+    let results: Vec<HistoricalOrder> = diesel::sql_query(
+        "SELECT * FROM (
+            SELECT *, ROW_NUMBER() OVER (ORDER BY timestamp) as rn
+            FROM historical_orders
+            WHERE symbol = $1 AND exchange = $2 AND event_type IN ('new', 'cancel', 'modify')
+        ) sub
+        WHERE rn % $3 = 0
+        ORDER BY timestamp"
+    )
+    .bind::<Text, _>(sym)
+    .bind::<Text, _>(xchange)
+    .bind::<BigInt, _>(sample_rate)
+    .load(&mut connection)
+    .await
+    .map_err(|e| {
+        error!("Stratified sampling query failed: {}", e);
+        e
+    })?;
+    
+    info!("Loaded {} orders sampled across full time range in {}ms (from {} total)", 
+        results.len(), start_time.elapsed().as_millis(), total_count);
+    
+    Ok(results)
+}
