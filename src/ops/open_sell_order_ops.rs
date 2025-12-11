@@ -54,6 +54,11 @@ pub async fn create_open_sell_order(pool: Arc<deadpool::Pool<AsyncPgConnection>>
 }
 
 pub async fn create_open_sell_orders(pool: Arc<deadpool::Pool<AsyncPgConnection>>, orders: Vec<NewOpenSellOrder>) -> Result<Vec<OpenSellOrder>, Error> {
+    if orders.is_empty() {
+        debug!("create_open_sell_orders called with empty orders vector");
+        return Ok(Vec::new());
+    }
+    
     info!("Creating {} open sell orders", orders.len());
     use crate::schema::open_sell_orders::dsl::*;
 
@@ -196,6 +201,11 @@ pub async fn delete_open_sell_order(pool: Arc<deadpool::Pool<AsyncPgConnection>>
 }
 
 pub async fn delete_open_sell_orders(pool: Arc<deadpool::Pool<AsyncPgConnection>>, ids: &[String]) -> Result<usize, Error> {
+    if ids.is_empty() {
+        debug!("delete_open_sell_orders called with empty ids vector");
+        return Ok(0);
+    }
+    
     info!("Deleting {} open sell orders", ids.len());
     use crate::schema::open_sell_orders::dsl::*;
 

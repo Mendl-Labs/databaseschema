@@ -56,11 +56,8 @@ pub async fn create_open_buy_order(pool: Arc<deadpool::Pool<AsyncPgConnection>>,
 
 pub async fn create_open_buy_orders(pool: Arc<deadpool::Pool<AsyncPgConnection>>, orders: Vec<NewOpenBuyOrder>) -> Result<Vec<OpenBuyOrder>, Error> {
     if orders.is_empty() {
-        warn!("Attempted to create open buy orders with empty input");
-        return Err(Error::DatabaseError(
-            diesel::result::DatabaseErrorKind::Unknown,
-            Box::new("Cannot create orders with empty input".to_string())
-        ));
+        debug!("create_open_buy_orders called with empty orders vector");
+        return Ok(Vec::new());
     }
     
     if orders.len() > 1000 {
@@ -229,6 +226,11 @@ pub async fn delete_open_buy_order(pool: Arc<deadpool::Pool<AsyncPgConnection>>,
 }
 
 pub async fn delete_open_buy_orders(pool: Arc<deadpool::Pool<AsyncPgConnection>>, ids: &[String]) -> Result<usize, Error> {
+    if ids.is_empty() {
+        debug!("delete_open_buy_orders called with empty ids vector");
+        return Ok(0);
+    }
+    
     info!("Deleting {} open buy orders", ids.len());
     use crate::schema::open_buy_orders::dsl::*;
 
