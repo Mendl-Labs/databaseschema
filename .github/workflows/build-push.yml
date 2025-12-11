@@ -75,6 +75,69 @@ jobs:
     runs-on: [self-hosted, windows, x64]
     
     steps:
+    - name: Fetch Secrets from Azure Key Vault
+      id: secrets
+      shell: powershell
+      env:
+        AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+        AZURE_KEYVAULT_NAME: ${{ secrets.AZURE_KEYVAULT_NAME }}
+      run: |
+        Write-Host "Fetching secrets from Azure Key Vault..."
+        
+        # Parse Azure credentials
+        try {
+          if ([string]::IsNullOrWhiteSpace($env:AZURE_CREDENTIALS)) {
+            throw "AZURE_CREDENTIALS secret is empty or not set"
+          }
+          $creds = $env:AZURE_CREDENTIALS | ConvertFrom-Json -ErrorAction Stop
+          Write-Host "[OK] Azure credentials parsed successfully"
+        } catch {
+          Write-Error "Failed to parse Azure credentials: $_"
+          exit 1
+        }
+        
+        # Authenticate with Azure CLI
+        try {
+          Write-Host "[INFO] Attempting Azure CLI login..."
+          $loginResult = az login --service-principal `
+            --username $creds.clientId `
+            --password $creds.clientSecret `
+            --tenant $creds.tenantId `
+            --output json 2>&1
+          
+          if ($LASTEXITCODE -ne 0) {
+            throw "Azure CLI login failed"
+          }
+          Write-Host "[OK] Successfully authenticated with Azure"
+        } catch {
+          Write-Error "Azure authentication failed: $_"
+          exit 1
+        }
+        
+        # Fetch database secrets
+        $secretNames = @("POSTGRES-HOST", "POSTGRES-PORT", "POSTGRES-USER", "POSTGRES-PASSWORD", "POSTGRES-DB")
+        
+        foreach ($secretName in $secretNames) {
+          $envName = $secretName -replace "-", "_"
+          $value = az keyvault secret show --vault-name $env:AZURE_KEYVAULT_NAME --name $secretName --query value -o tsv 2>&1
+          
+          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($value)) {
+            Write-Error "[FAIL] Failed to fetch secret $secretName"
+            exit 1
+          }
+          
+          $cleanValue = $value.Trim()
+          Write-Host "::add-mask::$cleanValue"
+          Add-Content -Path $env:GITHUB_ENV -Value "$envName=$cleanValue"
+          Write-Host "[OK] Fetched secret $envName"
+        }
+        
+        # Construct DATABASE_URL
+        $databaseUrl = "postgresql://$($env:POSTGRES_USER):$($env:POSTGRES_PASSWORD)@$($env:POSTGRES_HOST):$($env:POSTGRES_PORT)/$($env:POSTGRES_DB)"
+        Write-Host "::add-mask::$databaseUrl"
+        Add-Content -Path $env:GITHUB_ENV -Value "DATABASE_URL=$databaseUrl"
+        Write-Host "[OK] DATABASE_URL constructed"
+
     - name: Login to GHCR
       uses: docker/login-action@v3
       with:
@@ -86,7 +149,7 @@ jobs:
       shell: powershell
       run: |
         docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}
-        docker run --rm --network host -e DATABASE_URL="${{ secrets.DATABASE_URL }}" ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}
+        docker run --rm --network host -e DATABASE_URL="$env:DATABASE_URL" ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}
 
     - name: Migration Summary
       shell: powershell
