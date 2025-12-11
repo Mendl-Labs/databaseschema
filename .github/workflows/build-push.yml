@@ -83,13 +83,13 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Run Migrations
-      shell: pwsh
+      shell: powershell
       run: |
         docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}
         docker run --rm --network host -e DATABASE_URL="${{ secrets.DATABASE_URL }}" ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}
 
     - name: Migration Summary
-      shell: pwsh
+      shell: powershell
       run: |
         Write-Host "=========================================="
         Write-Host "Migrations Completed Successfully"
