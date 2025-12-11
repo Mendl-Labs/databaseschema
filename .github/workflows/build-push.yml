@@ -83,18 +83,17 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Run Migrations
+      shell: pwsh
       run: |
         docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}
-        docker run --rm \
-          --network host \
-          -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}
+        docker run --rm --network host -e DATABASE_URL="${{ secrets.DATABASE_URL }}" ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}
 
     - name: Migration Summary
+      shell: pwsh
       run: |
-        echo "=========================================="
-        echo "Migrations Completed Successfully"
-        echo "=========================================="
-        echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}"
-        echo "=========================================="
+        Write-Host "=========================================="
+        Write-Host "Migrations Completed Successfully"
+        Write-Host "=========================================="
+        Write-Host "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}"
+        Write-Host "=========================================="
 
