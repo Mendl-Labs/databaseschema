@@ -1,3 +1,4 @@
+pub mod backtest_job;
 pub mod backtest_result;
 pub mod candles;
 pub mod exchange;
