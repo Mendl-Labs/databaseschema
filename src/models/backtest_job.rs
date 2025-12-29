@@ -43,6 +43,8 @@ pub struct BacktestJobRecord {
     pub generations: Option<i32>,
     pub current_phase: Option<String>,
     pub phase_details: Option<serde_json::Value>,
+    /// Full BacktestJobParams serialized as JSON
+    pub params_json: serde_json::Value,
 }
 
 /// Insertable record for new backtest jobs
@@ -63,6 +65,8 @@ pub struct NewBacktestJob {
     pub commission_rate: BigDecimal,
     pub start_date: Option<DateTime<Utc>>,
     pub end_date: Option<DateTime<Utc>>,
+    /// Full BacktestJobParams serialized as JSON
+    pub params_json: serde_json::Value,
 }
 
 /// Updateable fields for backtest jobs

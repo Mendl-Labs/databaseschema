@@ -81,6 +81,7 @@ diesel::table! {
         #[max_length = 50]
         current_phase -> Nullable<Varchar>,
         phase_details -> Nullable<Jsonb>,
+        params_json -> Jsonb,
     }
 }
 
