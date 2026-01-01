@@ -67,6 +67,10 @@ pub struct NewBacktestJob {
     pub end_date: Option<DateTime<Utc>>,
     /// Full BacktestJobParams serialized as JSON
     pub params_json: serde_json::Value,
+    /// Initial current generation (0 for new jobs)
+    pub current_generation: Option<i32>,
+    /// Total generations from params (prevents null/null display in UI)
+    pub total_generations: Option<i32>,
 }
 
 /// Updateable fields for backtest jobs
