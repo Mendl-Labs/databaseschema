@@ -303,3 +303,33 @@ pub async fn get_open_sell_orders_by_symbol(pool: Arc<deadpool::Pool<AsyncPgConn
 
     Ok(sell_orderbook)
 }
+
+/// Delete all open sell orders for a given symbol and exchange
+pub async fn delete_open_sell_orders_by_symbol_exchange(
+    pool: Arc<deadpool::Pool<AsyncPgConnection>>,
+    sym: &str,
+    exch: &str,
+) -> Result<usize, Error> {
+    info!("Deleting open sell orders for symbol: {} exchange: {}", sym, exch);
+    use crate::schema::open_sell_orders::dsl::*;
+
+    let retry_strategy = ExponentialBackoff::from_millis(10).map(jitter).take(3);
+
+    Retry::spawn(retry_strategy, || async {
+        let mut connection = get_timescale_connection(pool.clone())
+            .await
+            .expect("Error connecting to database");
+        
+        diesel::delete(
+            open_sell_orders
+                .filter(symbol.eq(sym))
+                .filter(exchange.eq(exch))
+        )
+        .execute(&mut connection)
+        .await
+        .map_err(|e| {
+            error!("Database error deleting sell orders for {} on {}: {}", sym, exch, e);
+            e
+        })
+    }).await
+}

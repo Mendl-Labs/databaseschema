@@ -4,6 +4,7 @@ pub mod candles;
 pub mod exchange;
 pub mod historical_order;
 pub mod historical_snapshot;
+pub mod l2_orderbook_snapshot;
 pub mod open_buy_order;
 pub mod open_sell_order;
 pub mod order_book;
