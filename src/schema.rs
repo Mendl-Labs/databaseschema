@@ -302,6 +302,29 @@ diesel::table! {
 }
 
 diesel::table! {
+    /// Level 2 orderbook snapshots for exchanges without L3 data (Binance, Coinbase, etc.)
+    l2_orderbook_snapshots (timestamp, symbol, exchange) {
+        timestamp -> Timestamptz,
+        #[max_length = 10]
+        symbol -> Varchar,
+        #[max_length = 30]
+        exchange -> Varchar,
+        security_id -> Uuid,
+        exchange_id -> Uuid,
+        bid_prices -> Array<Numeric>,
+        bid_quantities -> Array<Numeric>,
+        ask_prices -> Array<Numeric>,
+        ask_quantities -> Array<Numeric>,
+        best_bid_price -> Nullable<Numeric>,
+        best_bid_quantity -> Nullable<Numeric>,
+        best_ask_price -> Nullable<Numeric>,
+        best_ask_quantity -> Nullable<Numeric>,
+        spread_bps -> Nullable<Numeric>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     open_buy_orders (created_at, unique_id) {
         created_at -> Timestamptz,
         #[max_length = 7]
@@ -690,6 +713,8 @@ diesel::joinable!(historical_orders -> exchanges (exchange_id));
 diesel::joinable!(historical_orders -> securities (security_id));
 diesel::joinable!(historical_snapshot -> exchanges (exchange_id));
 diesel::joinable!(historical_snapshot -> securities (security_id));
+diesel::joinable!(l2_orderbook_snapshots -> exchanges (exchange_id));
+diesel::joinable!(l2_orderbook_snapshots -> securities (security_id));
 diesel::joinable!(optimization_iterations -> optimization_runs (optimization_run_id));
 diesel::joinable!(optimization_runs -> strategies (strategy_id));
 diesel::joinable!(strategy_instances -> strategies (strategy_id));
@@ -740,6 +765,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     exchanges,
     historical_orders,
     historical_snapshot,
+    l2_orderbook_snapshots,
     open_buy_orders,
     open_sell_orders,
     optimization_iterations,
