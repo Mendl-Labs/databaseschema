@@ -363,3 +363,54 @@ pub async fn get_stratified_historical_orders(
     
     Ok(results)
 }
+
+/// Delete historical orders by symbol and exchange
+/// Used when clearing uploaded Tardis data before reimport
+pub async fn delete_historical_orders_by_symbol_exchange(
+    pool: Arc<deadpool::Pool<AsyncPgConnection>>,
+    sym: &str,
+    xchange: &str,
+) -> Result<usize, Error> {
+    use crate::schema::historical_orders::dsl::*;
+    let start_time = Instant::now();
+    info!("Deleting historical orders for symbol: {} on exchange: {}", sym, xchange);
+
+    // Security: Input validation
+    if sym.is_empty() || sym.len() > 20 {
+        error!("Invalid symbol length: {}", sym.len());
+        return Err(Error::RollbackTransaction);
+    }
+    if xchange.is_empty() || xchange.len() > 50 {
+        error!("Invalid exchange length: {}", xchange.len());
+        return Err(Error::RollbackTransaction);
+    }
+
+    let retry_strategy = ExponentialBackoff::from_millis(10).map(jitter).take(3);
+
+    Retry::spawn(retry_strategy, || async {
+        let mut connection = get_timescale_connection(pool.clone())
+            .await
+            .map_err(|e| {
+                error!("Failed to get database connection: {}", e);
+                Error::DatabaseError(
+                    diesel::result::DatabaseErrorKind::UnableToSendCommand,
+                    Box::new(e.to_string())
+                )
+            })?;
+            
+        let deleted = diesel::delete(
+            historical_orders
+                .filter(symbol.eq(sym))
+                .filter(exchange.eq(xchange))
+        )
+        .execute(&mut connection)
+        .await
+        .map_err(|e| {
+            error!("Error deleting historical orders: {}", e);
+            e
+        })?;
+        
+        info!("Deleted {} historical orders in {}ms", deleted, start_time.elapsed().as_millis());
+        Ok(deleted)
+    }).await
+}
