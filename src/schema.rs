@@ -260,7 +260,7 @@ diesel::table! {
     exchanges (exchange_id) {
         created_at -> Timestamptz,
         exchange_id -> Uuid,
-        #[max_length = 8]
+        #[max_length = 50]
         exchange -> Varchar,
     }
 }
@@ -329,7 +329,7 @@ diesel::table! {
         created_at -> Timestamptz,
         #[max_length = 7]
         symbol -> Varchar,
-        #[max_length = 8]
+        #[max_length = 50]
         exchange -> Varchar,
         security_id -> Uuid,
         exchange_id -> Uuid,
@@ -346,7 +346,7 @@ diesel::table! {
         created_at -> Timestamptz,
         #[max_length = 7]
         symbol -> Varchar,
-        #[max_length = 8]
+        #[max_length = 50]
         exchange -> Varchar,
         security_id -> Uuid,
         exchange_id -> Uuid,
@@ -410,7 +410,7 @@ diesel::table! {
         updated_at -> Nullable<Timestamptz>,
         #[max_length = 7]
         symbol -> Varchar,
-        #[max_length = 8]
+        #[max_length = 50]
         exchange -> Varchar,
         security_id -> Uuid,
         exchange_id -> Uuid,
@@ -436,7 +436,7 @@ diesel::table! {
         created_at -> Timestamptz,
         #[max_length = 7]
         symbol -> Varchar,
-        #[max_length = 8]
+        #[max_length = 50]
         exchange -> Varchar,
         #[max_length = 255]
         unique_id -> Varchar,
@@ -452,7 +452,7 @@ diesel::table! {
         created_at -> Timestamptz,
         #[max_length = 7]
         symbol -> Varchar,
-        #[max_length = 8]
+        #[max_length = 50]
         exchange -> Varchar,
         #[max_length = 255]
         unique_id -> Varchar,
@@ -468,7 +468,7 @@ diesel::table! {
         created_at -> Timestamptz,
         #[max_length = 7]
         symbol -> Varchar,
-        #[max_length = 8]
+        #[max_length = 50]
         exchange -> Varchar,
         trade_id -> Text,
         #[max_length = 4]
@@ -688,7 +688,7 @@ diesel::table! {
         created_at -> Timestamptz,
         #[max_length = 7]
         symbol -> Varchar,
-        #[max_length = 8]
+        #[max_length = 50]
         exchange -> Varchar,
         #[max_length = 255]
         trade_id -> Varchar,
