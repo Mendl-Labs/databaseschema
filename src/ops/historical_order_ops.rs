@@ -54,7 +54,7 @@ pub async fn create_historical_orders(pool: Arc<deadpool::Pool<AsyncPgConnection
     use crate::schema::historical_orders::dsl::*;
 
     // Security: Validate batch size to prevent resource exhaustion
-    const MAX_BATCH_SIZE: usize = 10000;
+    const MAX_BATCH_SIZE: usize = 150000;  // Allow large batches for L2 orderbook imports
     if orders.len() > MAX_BATCH_SIZE {
         error!("Batch size {} exceeds maximum {}", orders.len(), MAX_BATCH_SIZE);
         return Err(Error::RollbackTransaction);
