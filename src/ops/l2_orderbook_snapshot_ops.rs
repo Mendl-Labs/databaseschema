@@ -12,6 +12,7 @@ use crate::get_timescale_connection;
 use crate::models::l2_orderbook_snapshot::{L2OrderbookSnapshot, NewL2OrderbookSnapshot};
 
 /// Insert multiple L2 orderbook snapshots in bulk
+/// Uses ON CONFLICT DO NOTHING to skip duplicate snapshots (same timestamp/symbol/exchange)
 pub async fn create_l2_snapshots(
     pool: Arc<deadpool::Pool<AsyncPgConnection>>,
     snapshots: Vec<NewL2OrderbookSnapshot>,
@@ -27,6 +28,8 @@ pub async fn create_l2_snapshots(
         
         diesel::insert_into(l2_orderbook_snapshots)
             .values(&snapshots)
+            .on_conflict((timestamp, symbol, exchange))
+            .do_nothing()
             .execute(&mut connection)
             .await
     }).await
