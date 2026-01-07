@@ -184,3 +184,29 @@ pub async fn get_stratified_trades(
     
     Ok(results)
 }
+
+/// Delete all trades for a specific symbol and exchange
+pub async fn delete_trades_by_symbol_exchange(
+    pool: Arc<deadpool::Pool<AsyncPgConnection>>,
+    sym: &str,
+    xchange: &str,
+) -> Result<usize, Error> {
+    use crate::schema::trades::dsl::*;
+    
+    let retry_strategy = ExponentialBackoff::from_millis(10).map(jitter).take(3);
+    
+    Retry::spawn(retry_strategy, || async {
+        let mut connection = get_timescale_connection(pool.clone())
+            .await
+            .map_err(|_e| {
+                Error::DatabaseError(
+                    diesel::result::DatabaseErrorKind::UnableToSendCommand,
+                    Box::new("Failed to get database connection".to_string())
+                )
+            })?;
+        
+        diesel::delete(trades.filter(symbol.eq(sym).and(exchange.eq(xchange))))
+            .execute(&mut connection)
+            .await
+    }).await
+}
