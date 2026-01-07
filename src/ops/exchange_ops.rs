@@ -24,12 +24,12 @@ pub async fn create_exchange(pool: Arc<deadpool::Pool<AsyncPgConnection>>, new_e
                     Box::new(e.to_string())
                 )
             })?;
-            
+        
+        // Use ON CONFLICT on the exchange name (unique constraint) not exchange_id
         diesel::insert_into(exchanges)
             .values(&new_exchange)
-            .on_conflict(exchange_id)
-            .do_update()
-            .set(&new_exchange)
+            .on_conflict(exchange)
+            .do_nothing()
             .execute(&mut connection)
             .await?;
 
@@ -38,11 +38,11 @@ pub async fn create_exchange(pool: Arc<deadpool::Pool<AsyncPgConnection>>, new_e
             .first(&mut connection)
             .await
             .map_err(|e| {
-                error!("Error fetching new exchange: {}", e);
+                error!("Error fetching exchange: {}", e);
                 e
             })?;
             
-        debug!("Created exchange in {}ms", start_time.elapsed().as_millis());
+        debug!("Created/found exchange in {}ms", start_time.elapsed().as_millis());
         Ok(result)
     }).await
 }
