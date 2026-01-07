@@ -29,11 +29,11 @@ pub async fn create_security(pool: Arc<deadpool::Pool<AsyncPgConnection>>, new_s
             )
         })?;
         
+        // Use ON CONFLICT on symbol (unique constraint) not security_id
         diesel::insert_into(securities)
         .values(&new_security)
-        .on_conflict(security_id)
-        .do_update()
-        .set(&new_security)
+        .on_conflict(symbol)
+        .do_nothing()
         .execute(&mut connection)
         .await?;
 
@@ -43,12 +43,12 @@ pub async fn create_security(pool: Arc<deadpool::Pool<AsyncPgConnection>>, new_s
         .await
         .map_err(|e| {
             let logger = UltraLogger::new("databaseschema".to_string());
-            let _ = logger.error(format!("Error fetching new security: {}", e));
+            let _ = logger.error(format!("Error fetching security: {}", e));
             e
         })?;
         
         let logger = UltraLogger::new("databaseschema".to_string());
-        let _ = logger.debug(format!("Created security in {}ms", start_time.elapsed().as_millis())).await;
+        let _ = logger.debug(format!("Created/found security in {}ms", start_time.elapsed().as_millis())).await;
         Ok(result)
     }).await
 }
