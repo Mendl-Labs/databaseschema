@@ -2,40 +2,49 @@
 -- Track system health, service status, and uptime
 
 -- ============================================================================
--- ENUMS
+-- ENUMS (created safely to handle re-runs)
 -- ============================================================================
 
 -- Health check status
-CREATE TYPE health_status AS ENUM ('healthy', 'degraded', 'unhealthy', 'unknown');
+DO $$ BEGIN
+    CREATE TYPE health_status AS ENUM ('healthy', 'degraded', 'unhealthy', 'unknown');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Service type
-CREATE TYPE service_type AS ENUM (
-    'database',
-    'cache',
-    'message_broker',
-    'api',
-    'worker',
-    'external_api',
-    'storage',
-    'custom'
-);
+DO $$ BEGIN
+    CREATE TYPE service_type AS ENUM (
+        'database',
+        'cache',
+        'message_broker',
+        'api',
+        'worker',
+        'external_api',
+        'storage',
+        'custom'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Check type
-CREATE TYPE check_type AS ENUM (
-    'http',
-    'tcp',
-    'database',
-    'redis',
-    'custom',
-    'script'
-);
+DO $$ BEGIN
+    CREATE TYPE check_type AS ENUM (
+        'http',
+        'tcp',
+        'database',
+        'redis',
+        'custom',
+        'script'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ============================================================================
 -- HEALTH CHECKS CONFIGURATION
 -- ============================================================================
 
 -- Health check definitions
-CREATE TABLE health_checks (
+CREATE TABLE IF NOT EXISTS health_checks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     
@@ -86,7 +95,7 @@ CREATE TABLE health_checks (
 
 -- Individual health check results (time-series)
 -- Note: For TimescaleDB hypertables, PRIMARY KEY must include partitioning column, and FK constraints are not supported
-CREATE TABLE health_check_results (
+CREATE TABLE IF NOT EXISTS health_check_results (
     id UUID DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,  -- No FK for hypertable
     health_check_id UUID NOT NULL,  -- No FK for hypertable
@@ -122,7 +131,7 @@ SELECT create_hypertable('health_check_results', 'created_at',
 -- ============================================================================
 
 -- Overall service status tracking
-CREATE TABLE service_status (
+CREATE TABLE IF NOT EXISTS service_status (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     
@@ -163,7 +172,7 @@ CREATE TABLE service_status (
 
 -- Aggregated uptime statistics
 -- Note: For TimescaleDB hypertables, PRIMARY KEY must include partitioning column, and FK constraints are not supported
-CREATE TABLE uptime_records (
+CREATE TABLE IF NOT EXISTS uptime_records (
     id UUID DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,  -- No FK for hypertable
     service_id UUID,  -- No FK for hypertable
@@ -208,7 +217,7 @@ SELECT create_hypertable('uptime_records', 'period_start',
 -- ============================================================================
 
 -- Incident tracking
-CREATE TABLE health_incidents (
+CREATE TABLE IF NOT EXISTS health_incidents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     
@@ -243,7 +252,7 @@ CREATE TABLE health_incidents (
 );
 
 -- Incident updates (timeline)
-CREATE TABLE incident_updates (
+CREATE TABLE IF NOT EXISTS incident_updates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     incident_id UUID NOT NULL REFERENCES health_incidents(id) ON DELETE CASCADE,
     
@@ -259,7 +268,7 @@ CREATE TABLE incident_updates (
 -- ============================================================================
 
 -- Health alert rules
-CREATE TABLE health_alert_rules (
+CREATE TABLE IF NOT EXISTS health_alert_rules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     
@@ -291,7 +300,7 @@ CREATE TABLE health_alert_rules (
 -- ============================================================================
 
 -- Scheduled maintenance
-CREATE TABLE maintenance_windows (
+CREATE TABLE IF NOT EXISTS maintenance_windows (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     
@@ -325,41 +334,41 @@ CREATE TABLE maintenance_windows (
 -- ============================================================================
 
 -- Health checks
-CREATE INDEX idx_health_checks_tenant ON health_checks(tenant_id);
-CREATE INDEX idx_health_checks_enabled ON health_checks(tenant_id, is_enabled) WHERE is_enabled = true;
-CREATE INDEX idx_health_checks_status ON health_checks(tenant_id, current_status);
-CREATE INDEX idx_health_checks_next_check ON health_checks(tenant_id, last_check_at, interval_seconds) 
+CREATE INDEX IF NOT EXISTS idx_health_checks_tenant ON health_checks(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_health_checks_enabled ON health_checks(tenant_id, is_enabled) WHERE is_enabled = true;
+CREATE INDEX IF NOT EXISTS idx_health_checks_status ON health_checks(tenant_id, current_status);
+CREATE INDEX IF NOT EXISTS idx_health_checks_next_check ON health_checks(tenant_id, last_check_at, interval_seconds) 
     WHERE is_enabled = true;
 
 -- Health check results
-CREATE INDEX idx_health_results_check ON health_check_results(health_check_id, checked_at DESC);
-CREATE INDEX idx_health_results_tenant_time ON health_check_results(tenant_id, created_at DESC);
-CREATE INDEX idx_health_results_status ON health_check_results(tenant_id, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_health_results_check ON health_check_results(health_check_id, checked_at DESC);
+CREATE INDEX IF NOT EXISTS idx_health_results_tenant_time ON health_check_results(tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_health_results_status ON health_check_results(tenant_id, status, created_at DESC);
 
 -- Service status
-CREATE INDEX idx_service_status_tenant ON service_status(tenant_id);
-CREATE INDEX idx_service_status_public ON service_status(tenant_id, is_public) WHERE is_public = true;
-CREATE INDEX idx_service_status_status ON service_status(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_service_status_tenant ON service_status(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_service_status_public ON service_status(tenant_id, is_public) WHERE is_public = true;
+CREATE INDEX IF NOT EXISTS idx_service_status_status ON service_status(tenant_id, status);
 
 -- Uptime records
-CREATE INDEX idx_uptime_tenant_period ON uptime_records(tenant_id, period_type, period_start DESC);
-CREATE INDEX idx_uptime_service ON uptime_records(service_id, period_start DESC);
-CREATE INDEX idx_uptime_check ON uptime_records(health_check_id, period_start DESC);
+CREATE INDEX IF NOT EXISTS idx_uptime_tenant_period ON uptime_records(tenant_id, period_type, period_start DESC);
+CREATE INDEX IF NOT EXISTS idx_uptime_service ON uptime_records(service_id, period_start DESC);
+CREATE INDEX IF NOT EXISTS idx_uptime_check ON uptime_records(health_check_id, period_start DESC);
 
 -- Incidents
-CREATE INDEX idx_incidents_tenant ON health_incidents(tenant_id, started_at DESC);
-CREATE INDEX idx_incidents_status ON health_incidents(tenant_id, status) WHERE status != 'resolved';
-CREATE INDEX idx_incidents_service ON health_incidents(service_id, started_at DESC);
-CREATE INDEX idx_incident_updates_incident ON incident_updates(incident_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_incidents_tenant ON health_incidents(tenant_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_incidents_status ON health_incidents(tenant_id, status) WHERE status != 'resolved';
+CREATE INDEX IF NOT EXISTS idx_incidents_service ON health_incidents(service_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_incident_updates_incident ON incident_updates(incident_id, created_at);
 
 -- Alert rules
-CREATE INDEX idx_health_alerts_tenant ON health_alert_rules(tenant_id);
-CREATE INDEX idx_health_alerts_check ON health_alert_rules(health_check_id) WHERE is_enabled = true;
-CREATE INDEX idx_health_alerts_service ON health_alert_rules(service_id) WHERE is_enabled = true;
+CREATE INDEX IF NOT EXISTS idx_health_alerts_tenant ON health_alert_rules(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_health_alerts_check ON health_alert_rules(health_check_id) WHERE is_enabled = true;
+CREATE INDEX IF NOT EXISTS idx_health_alerts_service ON health_alert_rules(service_id) WHERE is_enabled = true;
 
 -- Maintenance windows
-CREATE INDEX idx_maintenance_tenant ON maintenance_windows(tenant_id, scheduled_start);
-CREATE INDEX idx_maintenance_active ON maintenance_windows(tenant_id, status, scheduled_start, scheduled_end)
+CREATE INDEX IF NOT EXISTS idx_maintenance_tenant ON maintenance_windows(tenant_id, scheduled_start);
+CREATE INDEX IF NOT EXISTS idx_maintenance_active ON maintenance_windows(tenant_id, status, scheduled_start, scheduled_end)
     WHERE status IN ('scheduled', 'in_progress');
 
 -- ============================================================================
@@ -401,6 +410,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_health_check_status ON health_check_results;
 CREATE TRIGGER trigger_update_health_check_status
     AFTER INSERT ON health_check_results
     FOR EACH ROW
@@ -489,26 +499,31 @@ $$ LANGUAGE plpgsql;
 -- TRIGGERS FOR UPDATED_AT
 -- ============================================================================
 
+DROP TRIGGER IF EXISTS set_updated_at_health_checks ON health_checks;
 CREATE TRIGGER set_updated_at_health_checks
     BEFORE UPDATE ON health_checks
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS set_updated_at_service_status ON service_status;
 CREATE TRIGGER set_updated_at_service_status
     BEFORE UPDATE ON service_status
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS set_updated_at_health_incidents ON health_incidents;
 CREATE TRIGGER set_updated_at_health_incidents
     BEFORE UPDATE ON health_incidents
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS set_updated_at_health_alert_rules ON health_alert_rules;
 CREATE TRIGGER set_updated_at_health_alert_rules
     BEFORE UPDATE ON health_alert_rules
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS set_updated_at_maintenance_windows ON maintenance_windows;
 CREATE TRIGGER set_updated_at_maintenance_windows
     BEFORE UPDATE ON maintenance_windows
     FOR EACH ROW
