@@ -8,6 +8,7 @@ use uuid::Uuid;
 #[diesel(table_name = crate::schema::backtest_results)]
 pub struct BacktestResult {
     pub id: Uuid,
+    pub tenant_id: Uuid,
     pub backtest_id: Uuid,
     pub strategy_name: String,
     pub symbol: String,
@@ -69,6 +70,7 @@ pub struct BacktestResult {
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::backtest_results)]
 pub struct NewBacktestResult {
+    pub tenant_id: Uuid,
     pub backtest_id: Uuid,
     pub strategy_name: String,
     pub symbol: String,
