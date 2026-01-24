@@ -9,6 +9,7 @@ use uuid::Uuid;
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Strategy {
     pub id: Uuid,
+    pub tenant_id: Uuid,
     pub strategy_name: String,
     pub strategy_type: String,
     pub version: String,
@@ -24,6 +25,7 @@ pub struct Strategy {
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::strategies)]
 pub struct NewStrategy {
+    pub tenant_id: Uuid,
     pub strategy_name: String,
     pub strategy_type: String,
     pub version: String,
@@ -86,6 +88,7 @@ pub struct NewStrategyParameter {
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct StrategyInstance {
     pub id: Uuid,
+    pub tenant_id: Uuid,
     pub strategy_id: Uuid,
     pub instance_name: Option<String>,
     pub description: Option<String>,
@@ -104,6 +107,7 @@ pub struct StrategyInstance {
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::strategy_instances)]
 pub struct NewStrategyInstance {
+    pub tenant_id: Uuid,
     pub strategy_id: Uuid,
     pub instance_name: Option<String>,
     pub description: Option<String>,

@@ -1,4 +1,5 @@
 // @generated automatically by Diesel CLI.
+// NOTE: Multi-tenancy tables added manually - run `diesel print-schema` to regenerate after migration
 
 pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
@@ -20,6 +21,10 @@ pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "time_in_force"))]
     pub struct TimeInForce;
+
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "subscription_tier"))]
+    pub struct SubscriptionTier;
 }
 
 diesel::table! {
@@ -48,6 +53,7 @@ diesel::table! {
 diesel::table! {
     backtest_jobs (id) {
         id -> Uuid,
+        tenant_id -> Uuid,
         #[max_length = 255]
         job_id -> Varchar,
         #[max_length = 50]
@@ -173,6 +179,7 @@ diesel::table! {
 diesel::table! {
     backtest_results (id) {
         id -> Uuid,
+        tenant_id -> Uuid,
         backtest_id -> Uuid,
         #[max_length = 255]
         strategy_name -> Varchar,
@@ -281,6 +288,7 @@ diesel::table! {
         symbol -> Text,
         exchange_id -> Uuid,
         security_id -> Uuid,
+        tenant_id -> Uuid,
     }
 }
 
@@ -482,6 +490,7 @@ diesel::table! {
 diesel::table! {
     strategies (id) {
         id -> Uuid,
+        tenant_id -> Uuid,
         #[max_length = 255]
         strategy_name -> Varchar,
         #[max_length = 100]
@@ -520,6 +529,7 @@ diesel::table! {
 diesel::table! {
     strategy_instances (id) {
         id -> Uuid,
+        tenant_id -> Uuid,
         strategy_id -> Uuid,
         #[max_length = 255]
         instance_name -> Nullable<Varchar>,
@@ -752,7 +762,128 @@ diesel::table! {
     }
 }
 
+// =============================================================================
+// Multi-Tenancy Tables (B2B SaaS)
+// =============================================================================
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::SubscriptionTier;
+
+    tenants (id) {
+        id -> Uuid,
+        #[max_length = 255]
+        company_name -> Varchar,
+        #[max_length = 100]
+        slug -> Varchar,
+        subscription_tier -> SubscriptionTier,
+        #[max_length = 255]
+        stripe_customer_id -> Nullable<Varchar>,
+        #[max_length = 255]
+        stripe_subscription_id -> Nullable<Varchar>,
+        api_key_hash -> Nullable<Text>,
+        api_rate_limit -> Int4,
+        max_concurrent_backtests -> Int4,
+        max_strategies -> Int4,
+        historical_data_months -> Int4,
+        features -> Jsonb,
+        settings -> Jsonb,
+        is_active -> Bool,
+        trial_ends_at -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    users (id) {
+        id -> Uuid,
+        tenant_id -> Uuid,
+        #[max_length = 255]
+        email -> Varchar,
+        password_hash -> Nullable<Text>,
+        #[max_length = 255]
+        name -> Nullable<Varchar>,
+        #[max_length = 50]
+        role -> Varchar,
+        #[max_length = 255]
+        auth_provider -> Nullable<Varchar>,
+        #[max_length = 255]
+        auth_provider_id -> Nullable<Varchar>,
+        email_verified -> Bool,
+        is_active -> Bool,
+        last_login_at -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    audit_logs (id) {
+        id -> Uuid,
+        tenant_id -> Uuid,
+        user_id -> Nullable<Uuid>,
+        #[max_length = 100]
+        action -> Varchar,
+        #[max_length = 100]
+        resource_type -> Varchar,
+        resource_id -> Nullable<Uuid>,
+        details -> Nullable<Jsonb>,
+        ip_address -> Nullable<Text>,
+        user_agent -> Nullable<Text>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    data_cache_status (id) {
+        id -> Uuid,
+        #[max_length = 50]
+        exchange -> Varchar,
+        #[max_length = 20]
+        symbol -> Varchar,
+        #[max_length = 50]
+        data_type -> Varchar,
+        earliest_date -> Timestamptz,
+        latest_date -> Timestamptz,
+        record_count -> Int8,
+        #[max_length = 50]
+        source -> Varchar,
+        last_updated -> Timestamptz,
+        is_complete -> Bool,
+        gaps -> Nullable<Jsonb>,
+    }
+}
+
+diesel::table! {
+    tenant_data_sources (id) {
+        id -> Uuid,
+        tenant_id -> Uuid,
+        #[max_length = 50]
+        exchange -> Varchar,
+        #[max_length = 20]
+        symbol -> Varchar,
+        is_enabled -> Bool,
+        #[max_length = 255]
+        api_key_encrypted -> Nullable<Varchar>,
+        #[max_length = 255]
+        api_secret_encrypted -> Nullable<Varchar>,
+        #[max_length = 255]
+        passphrase_encrypted -> Nullable<Varchar>,
+        settings -> Nullable<Jsonb>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+// Foreign key relationships for multi-tenancy
+diesel::joinable!(users -> tenants (tenant_id));
+diesel::joinable!(audit_logs -> tenants (tenant_id));
+diesel::joinable!(audit_logs -> users (user_id));
+diesel::joinable!(tenant_data_sources -> tenants (tenant_id));
+
 diesel::allow_tables_to_appear_in_same_query!(
+    audit_logs,
     backtest_drawdown_periods,
     backtest_equity_curve,
     backtest_jobs,
@@ -762,6 +893,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     backtest_results,
     backtest_trades,
     current_balances,
+    data_cache_status,
     exchanges,
     historical_orders,
     historical_snapshot,
@@ -782,6 +914,9 @@ diesel::allow_tables_to_appear_in_same_query!(
     strategy_order_state_changes,
     strategy_orders,
     strategy_parameters,
+    tenant_data_sources,
+    tenants,
     trades,
+    users,
     wallet_balances,
 );

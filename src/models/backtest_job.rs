@@ -17,6 +17,7 @@ use uuid::Uuid;
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct BacktestJobRecord {
     pub id: Uuid,
+    pub tenant_id: Uuid,
     pub job_id: String,
     pub symbol: String,
     pub exchange: String,
@@ -51,6 +52,7 @@ pub struct BacktestJobRecord {
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::backtest_jobs)]
 pub struct NewBacktestJob {
+    pub tenant_id: Uuid,
     pub job_id: String,
     pub symbol: String,
     pub exchange: String,

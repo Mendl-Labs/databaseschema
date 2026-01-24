@@ -24,6 +24,7 @@ pub struct NewHistoricalOrder {
     symbol: String,
     exchange_id: Uuid,
     security_id: Uuid,
+    tenant_id: Uuid,
 }
 
 impl NewHistoricalOrder {
@@ -41,6 +42,7 @@ impl NewHistoricalOrder {
         symbol: &str,
         exchange_id: Uuid,
         security_id: Uuid,
+        tenant_id: Uuid,
     ) -> NewHistoricalOrder {
         NewHistoricalOrder {
             timestamp,
@@ -56,6 +58,7 @@ impl NewHistoricalOrder {
             symbol: symbol.to_string(),
             exchange_id,
             security_id,
+            tenant_id,
         }
     }
 
@@ -93,9 +96,11 @@ pub struct HistoricalOrder {
     #[diesel(sql_type = VarChar)]
     pub symbol: String,
     #[diesel(sql_type = diesel::sql_types::Uuid)]
+    pub exchange_id: Uuid,
+    #[diesel(sql_type = diesel::sql_types::Uuid)]
     pub security_id: Uuid,
     #[diesel(sql_type = diesel::sql_types::Uuid)]
-    pub exchange_id: Uuid,
+    pub tenant_id: Uuid,
 }
 
 impl HistoricalOrder {
