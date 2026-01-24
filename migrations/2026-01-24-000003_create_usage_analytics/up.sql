@@ -2,9 +2,10 @@
 -- Tracks granular usage events for billing, analytics, and insights
 
 -- Usage events table for granular tracking
+-- Note: For TimescaleDB hypertables, PRIMARY KEY must include the partitioning column
 CREATE TABLE usage_events (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    id UUID DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL,  -- No FK constraint for hypertables
     user_id VARCHAR(255),  -- Clerk user ID (nullable for system events)
     
     -- Event classification
@@ -32,7 +33,10 @@ CREATE TABLE usage_events (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     
     -- Partitioning support
-    event_date DATE NOT NULL DEFAULT CURRENT_DATE
+    event_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    
+    -- Composite primary key includes partitioning column for TimescaleDB
+    PRIMARY KEY (id, created_at)
 );
 
 -- Convert to hypertable for time-series optimization (TimescaleDB)
