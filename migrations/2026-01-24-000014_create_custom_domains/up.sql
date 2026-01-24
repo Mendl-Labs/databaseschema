@@ -1,72 +1,89 @@
 -- Custom Domains
 -- Allow tenants to use their own domains for the platform
+-- Note: custom_domains table was already created in white_labeling migration
+-- This migration extends it with additional tables and features
 
 -- ============================================================================
--- Enum Types
+-- Enum Types (created safely to handle re-runs)
 -- ============================================================================
 
 -- Domain status
-CREATE TYPE domain_status AS ENUM (
-    'pending_verification',
-    'verification_failed',
-    'verified',
-    'ssl_pending',
-    'ssl_failed',
-    'active',
-    'suspended',
-    'expired'
-);
+DO $$ BEGIN
+    CREATE TYPE domain_status AS ENUM (
+        'pending_verification',
+        'verification_failed',
+        'verified',
+        'ssl_pending',
+        'ssl_failed',
+        'active',
+        'suspended',
+        'expired'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Verification method
-CREATE TYPE domain_verification_method AS ENUM (
-    'dns_txt',
-    'dns_cname',
-    'http_file',
-    'meta_tag'
-);
+DO $$ BEGIN
+    CREATE TYPE domain_verification_method AS ENUM (
+        'dns_txt',
+        'dns_cname',
+        'http_file',
+        'meta_tag'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
--- SSL certificate status
-CREATE TYPE ssl_status AS ENUM (
-    'pending',
-    'issuing',
-    'issued',
-    'failed',
-    'expired',
-    'revoked'
-);
+-- SSL certificate status (may conflict with white_labeling)
+DO $$ BEGIN
+    CREATE TYPE ssl_status AS ENUM (
+        'pending',
+        'issuing',
+        'issued',
+        'failed',
+        'expired',
+        'revoked'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- DNS record type
-CREATE TYPE dns_record_type AS ENUM (
-    'A',
-    'AAAA',
-    'CNAME',
-    'TXT',
-    'MX'
-);
+DO $$ BEGIN
+    CREATE TYPE dns_record_type AS ENUM (
+        'A',
+        'AAAA',
+        'CNAME',
+        'TXT',
+        'MX'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Domain event type
-CREATE TYPE domain_event_type AS ENUM (
-    'domain_added',
-    'domain_removed',
-    'verification_started',
-    'verification_success',
-    'verification_failed',
-    'ssl_requested',
-    'ssl_issued',
-    'ssl_renewed',
-    'ssl_failed',
-    'ssl_expired',
-    'domain_activated',
-    'domain_suspended',
-    'dns_configured',
-    'dns_error'
-);
+DO $$ BEGIN
+    CREATE TYPE domain_event_type AS ENUM (
+        'domain_added',
+        'domain_removed',
+        'verification_started',
+        'verification_success',
+        'verification_failed',
+        'ssl_requested',
+        'ssl_issued',
+        'ssl_renewed',
+        'ssl_failed',
+        'ssl_expired',
+        'domain_activated',
+        'domain_suspended',
+        'dns_configured',
+        'dns_error'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ============================================================================
--- Custom Domains Table
+-- Custom Domains Table (skip if already exists from white_labeling)
 -- ============================================================================
 
-CREATE TABLE custom_domains (
+CREATE TABLE IF NOT EXISTS IF NOT EXISTS custom_domains (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,
     
@@ -121,16 +138,16 @@ CREATE TABLE custom_domains (
     expires_at TIMESTAMPTZ                       -- Domain registration expiry
 );
 
-CREATE INDEX idx_custom_domains_tenant ON custom_domains(tenant_id);
-CREATE INDEX idx_custom_domains_status ON custom_domains(status);
-CREATE INDEX idx_custom_domains_root ON custom_domains(root_domain);
-CREATE INDEX idx_custom_domains_active ON custom_domains(tenant_id, is_enabled, status);
+CREATE INDEX IF NOT EXISTS idx_custom_domains_tenant ON custom_domains(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_custom_domains_status ON custom_domains(status);
+CREATE INDEX IF NOT EXISTS idx_custom_domains_root ON custom_domains(root_domain);
+CREATE INDEX IF NOT EXISTS idx_custom_domains_active ON custom_domains(tenant_id, is_enabled, status);
 
 -- ============================================================================
 -- SSL Certificates Table
 -- ============================================================================
 
-CREATE TABLE domain_ssl_certificates (
+CREATE TABLE IF NOT EXISTS domain_ssl_certificates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,
     domain_id UUID NOT NULL REFERENCES custom_domains(id) ON DELETE CASCADE,
@@ -175,16 +192,16 @@ CREATE TABLE domain_ssl_certificates (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_ssl_certs_domain ON domain_ssl_certificates(domain_id);
-CREATE INDEX idx_ssl_certs_tenant ON domain_ssl_certificates(tenant_id);
-CREATE INDEX idx_ssl_certs_expiry ON domain_ssl_certificates(not_after) WHERE status = 'issued';
-CREATE INDEX idx_ssl_certs_renewal ON domain_ssl_certificates(not_after, auto_renew) WHERE status = 'issued' AND auto_renew = true;
+CREATE INDEX IF NOT EXISTS idx_ssl_certs_domain ON domain_ssl_certificates(domain_id);
+CREATE INDEX IF NOT EXISTS idx_ssl_certs_tenant ON domain_ssl_certificates(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_ssl_certs_expiry ON domain_ssl_certificates(not_after) WHERE status = 'issued';
+CREATE INDEX IF NOT EXISTS idx_ssl_certs_renewal ON domain_ssl_certificates(not_after, auto_renew) WHERE status = 'issued' AND auto_renew = true;
 
 -- ============================================================================
 -- DNS Records Table (expected records for verification/routing)
 -- ============================================================================
 
-CREATE TABLE domain_dns_records (
+CREATE TABLE IF NOT EXISTS domain_dns_records (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,
     domain_id UUID NOT NULL REFERENCES custom_domains(id) ON DELETE CASCADE,
@@ -211,14 +228,14 @@ CREATE TABLE domain_dns_records (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_dns_records_domain ON domain_dns_records(domain_id);
-CREATE INDEX idx_dns_records_purpose ON domain_dns_records(domain_id, purpose);
+CREATE INDEX IF NOT EXISTS idx_dns_records_domain ON domain_dns_records(domain_id);
+CREATE INDEX IF NOT EXISTS idx_dns_records_purpose ON domain_dns_records(domain_id, purpose);
 
 -- ============================================================================
 -- Domain Verification Attempts Table
 -- ============================================================================
 
-CREATE TABLE domain_verification_attempts (
+CREATE TABLE IF NOT EXISTS domain_verification_attempts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,
     domain_id UUID NOT NULL REFERENCES custom_domains(id) ON DELETE CASCADE,
@@ -249,14 +266,14 @@ CREATE TABLE domain_verification_attempts (
     details JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX idx_verification_attempts_domain ON domain_verification_attempts(domain_id);
-CREATE INDEX idx_verification_attempts_time ON domain_verification_attempts(domain_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_verification_attempts_domain ON domain_verification_attempts(domain_id);
+CREATE INDEX IF NOT EXISTS idx_verification_attempts_time ON domain_verification_attempts(domain_id, started_at DESC);
 
 -- ============================================================================
 -- Domain Audit Log (TimescaleDB hypertable)
 -- ============================================================================
 
-CREATE TABLE domain_audit_log (
+CREATE TABLE IF NOT EXISTS domain_audit_log (
     id UUID NOT NULL DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,
     domain_id UUID,
@@ -290,14 +307,14 @@ SELECT create_hypertable('domain_audit_log', 'event_time',
     if_not_exists => TRUE
 );
 
-CREATE INDEX idx_domain_audit_tenant_time ON domain_audit_log(tenant_id, event_time DESC);
-CREATE INDEX idx_domain_audit_domain ON domain_audit_log(domain_id, event_time DESC);
+CREATE INDEX IF NOT EXISTS idx_domain_audit_tenant_time ON domain_audit_log(tenant_id, event_time DESC);
+CREATE INDEX IF NOT EXISTS idx_domain_audit_domain ON domain_audit_log(domain_id, event_time DESC);
 
 -- ============================================================================
 -- Domain Traffic Stats (TimescaleDB hypertable)
 -- ============================================================================
 
-CREATE TABLE domain_traffic_stats (
+CREATE TABLE IF NOT EXISTS domain_traffic_stats (
     id UUID NOT NULL DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,
     domain_id UUID NOT NULL,
@@ -339,8 +356,8 @@ SELECT create_hypertable('domain_traffic_stats', 'bucket_time',
     if_not_exists => TRUE
 );
 
-CREATE INDEX idx_domain_traffic_tenant ON domain_traffic_stats(tenant_id, bucket_time DESC);
-CREATE INDEX idx_domain_traffic_domain ON domain_traffic_stats(domain_id, bucket_time DESC);
+CREATE INDEX IF NOT EXISTS idx_domain_traffic_tenant ON domain_traffic_stats(tenant_id, bucket_time DESC);
+CREATE INDEX IF NOT EXISTS idx_domain_traffic_domain ON domain_traffic_stats(domain_id, bucket_time DESC);
 
 -- ============================================================================
 -- Functions
@@ -452,3 +469,4 @@ COMMENT ON TABLE domain_dns_records IS 'Expected DNS records for domain verifica
 COMMENT ON TABLE domain_verification_attempts IS 'History of domain verification attempts';
 COMMENT ON TABLE domain_audit_log IS 'Audit trail for domain-related events';
 COMMENT ON TABLE domain_traffic_stats IS 'Traffic statistics per domain for analytics';
+
