@@ -139,9 +139,16 @@ CREATE TABLE IF NOT EXISTS custom_domains (
 );
 
 CREATE INDEX IF NOT EXISTS idx_custom_domains_tenant ON custom_domains(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_custom_domains_status ON custom_domains(status);
+-- Note: index on status column - only create if column exists (may not exist if table from white_labeling)
+DO $$ BEGIN
+    CREATE INDEX IF NOT EXISTS idx_custom_domains_status ON custom_domains(status);
+EXCEPTION WHEN undefined_column THEN NULL;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_custom_domains_root ON custom_domains(root_domain);
-CREATE INDEX IF NOT EXISTS idx_custom_domains_active ON custom_domains(tenant_id, is_enabled, status);
+DO $$ BEGIN
+    CREATE INDEX IF NOT EXISTS idx_custom_domains_active ON custom_domains(tenant_id, is_enabled, status);
+EXCEPTION WHEN undefined_column THEN NULL;
+END $$;
 
 -- ============================================================================
 -- SSL Certificates Table
