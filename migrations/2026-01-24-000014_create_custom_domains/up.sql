@@ -138,13 +138,20 @@ CREATE TABLE IF NOT EXISTS custom_domains (
     expires_at TIMESTAMPTZ                       -- Domain registration expiry
 );
 
+-- Note: custom_domains table may have been created by white_labeling with different schema
+-- Wrap all index creations in exception handlers to handle missing columns
 CREATE INDEX IF NOT EXISTS idx_custom_domains_tenant ON custom_domains(tenant_id);
--- Note: index on status column - only create if column exists (may not exist if table from white_labeling)
+
 DO $$ BEGIN
     CREATE INDEX IF NOT EXISTS idx_custom_domains_status ON custom_domains(status);
 EXCEPTION WHEN undefined_column THEN NULL;
 END $$;
-CREATE INDEX IF NOT EXISTS idx_custom_domains_root ON custom_domains(root_domain);
+
+DO $$ BEGIN
+    CREATE INDEX IF NOT EXISTS idx_custom_domains_root ON custom_domains(root_domain);
+EXCEPTION WHEN undefined_column THEN NULL;
+END $$;
+
 DO $$ BEGIN
     CREATE INDEX IF NOT EXISTS idx_custom_domains_active ON custom_domains(tenant_id, is_enabled, status);
 EXCEPTION WHEN undefined_column THEN NULL;
