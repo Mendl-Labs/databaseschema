@@ -1,6 +1,9 @@
 -- White-labeling / Tenant Branding Migration
 -- Enables custom branding per tenant: logos, colors, themes, custom domains
 
+-- Ensure pgcrypto extension is available for gen_random_bytes
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- ============================================================================
 -- Tenant Branding Table
 -- ============================================================================
