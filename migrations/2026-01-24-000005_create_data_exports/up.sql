@@ -181,15 +181,16 @@ CREATE TABLE export_quotas (
 -- ============================================================================
 
 -- View for backtest export data (joins backtest_jobs with backtest_results)
+-- Note: Uses only columns that exist in the actual schema
 CREATE OR REPLACE VIEW v_backtest_export AS
 SELECT 
     bj.id,
     bj.tenant_id,
-    bj.user_id,
+    bj.job_id,
     bj.symbol,
     bj.exchange,
-    bj.strategy_type,
     bj.status,
+    bj.initial_capital AS job_initial_capital,
     br.start_date,
     br.end_date,
     br.initial_capital,
@@ -206,8 +207,6 @@ SELECT
     br.max_drawdown,
     br.max_drawdown AS max_drawdown_pct,
     br.avg_trade_return AS avg_trade_profit,
-    br.best_trade AS avg_win,
-    br.worst_trade AS avg_loss,
     br.best_trade AS largest_win,
     br.worst_trade AS largest_loss,
     br.avg_time_in_trade * 24 AS avg_holding_period_hours,
