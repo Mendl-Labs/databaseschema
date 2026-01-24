@@ -83,7 +83,7 @@ END $$;
 -- Custom Domains Table (skip if already exists from white_labeling)
 -- ============================================================================
 
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS custom_domains (
+CREATE TABLE IF NOT EXISTS custom_domains (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,
     
