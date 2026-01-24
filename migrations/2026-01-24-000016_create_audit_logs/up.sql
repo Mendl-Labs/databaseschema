@@ -77,6 +77,19 @@ END $$;
 -- ALTER TABLE audit_logs PARTITION BY RANGE (created_at);
 
 COMMENT ON TABLE audit_logs IS 'Immutable audit trail for all tenant and system events';
-COMMENT ON COLUMN audit_logs.action IS 'Dot-notation action identifier, e.g., backtest.create, auth.login.failed';
-COMMENT ON COLUMN audit_logs.action_category IS 'High-level category for filtering: backtest, strategy, auth, billing, admin, system';
-COMMENT ON COLUMN audit_logs.details IS 'Action-specific metadata in JSON format';
+
+-- Column comments may fail if table was created by earlier migration with different schema
+DO $$ BEGIN
+    COMMENT ON COLUMN audit_logs.action IS 'Dot-notation action identifier, e.g., backtest.create, auth.login.failed';
+EXCEPTION WHEN undefined_column THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    COMMENT ON COLUMN audit_logs.action_category IS 'High-level category for filtering: backtest, strategy, auth, billing, admin, system';
+EXCEPTION WHEN undefined_column THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    COMMENT ON COLUMN audit_logs.details IS 'Action-specific metadata in JSON format';
+EXCEPTION WHEN undefined_column THEN NULL;
+END $$;
