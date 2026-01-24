@@ -37,20 +37,41 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Indexes for common query patterns
+-- Indexes for common query patterns (wrapped in exception handlers for idempotency)
 CREATE INDEX IF NOT EXISTS idx_audit_logs_tenant_id ON audit_logs(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_action_category ON audit_logs(action_category);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
+
+-- These indexes may fail if table was created by earlier migration with different schema
+DO $$ BEGIN
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+EXCEPTION WHEN undefined_column THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_action_category ON audit_logs(action_category);
+EXCEPTION WHEN undefined_column THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
+EXCEPTION WHEN undefined_column THEN NULL;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_status ON audit_logs(status);
+
+DO $$ BEGIN
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_status ON audit_logs(status);
+EXCEPTION WHEN undefined_column THEN NULL;
+END $$;
 
 -- Composite index for tenant activity queries
 CREATE INDEX IF NOT EXISTS idx_audit_logs_tenant_time ON audit_logs(tenant_id, created_at DESC);
 
--- GIN index for JSONB details search
-CREATE INDEX IF NOT EXISTS idx_audit_logs_details ON audit_logs USING GIN(details);
+-- GIN index for JSONB details search (may fail if details column doesn't exist)
+DO $$ BEGIN
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_details ON audit_logs USING GIN(details);
+EXCEPTION WHEN undefined_column THEN NULL;
+END $$;
 
 -- Partitioning hint: In production, consider partitioning by created_at for better performance
 -- ALTER TABLE audit_logs PARTITION BY RANGE (created_at);
