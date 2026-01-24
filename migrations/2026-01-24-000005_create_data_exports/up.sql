@@ -180,43 +180,43 @@ CREATE TABLE export_quotas (
 -- Views for Export Data
 -- ============================================================================
 
--- View for backtest export data
+-- View for backtest export data (joins backtest_jobs with backtest_results)
 CREATE OR REPLACE VIEW v_backtest_export AS
 SELECT 
-    b.id,
-    b.tenant_id,
-    b.user_id,
-    b.symbol,
-    b.exchange,
-    b.timeframe,
-    b.strategy_type,
-    b.status,
-    b.start_date,
-    b.end_date,
-    b.initial_capital,
-    b.final_equity,
-    b.net_profit,
-    b.net_profit_pct,
-    b.total_trades,
-    b.winning_trades,
-    b.losing_trades,
-    b.win_rate,
-    b.profit_factor,
-    b.sharpe_ratio,
-    b.sortino_ratio,
-    b.max_drawdown,
-    b.max_drawdown_pct,
-    b.avg_trade_profit,
-    b.avg_win,
-    b.avg_loss,
-    b.largest_win,
-    b.largest_loss,
-    b.avg_holding_period_hours,
-    b.commission_paid,
-    b.slippage_cost,
-    b.created_at,
-    b.completed_at
-FROM backtests b;
+    bj.id,
+    bj.tenant_id,
+    bj.user_id,
+    bj.symbol,
+    bj.exchange,
+    bj.strategy_type,
+    bj.status,
+    br.start_date,
+    br.end_date,
+    br.initial_capital,
+    br.total_return + br.initial_capital AS final_equity,
+    br.total_return AS net_profit,
+    br.total_return / NULLIF(br.initial_capital, 0) * 100 AS net_profit_pct,
+    br.total_trades,
+    ROUND(br.total_trades * br.win_rate) AS winning_trades,
+    br.total_trades - ROUND(br.total_trades * br.win_rate) AS losing_trades,
+    br.win_rate,
+    br.profit_factor,
+    br.sharpe_ratio,
+    br.sortino_ratio,
+    br.max_drawdown,
+    br.max_drawdown AS max_drawdown_pct,
+    br.avg_trade_return AS avg_trade_profit,
+    br.best_trade AS avg_win,
+    br.worst_trade AS avg_loss,
+    br.best_trade AS largest_win,
+    br.worst_trade AS largest_loss,
+    br.avg_time_in_trade * 24 AS avg_holding_period_hours,
+    br.total_commission_paid AS commission_paid,
+    br.avg_slippage AS slippage_cost,
+    bj.created_at,
+    bj.completed_at
+FROM backtest_jobs bj
+LEFT JOIN backtest_results br ON bj.result_id = br.id;
 
 -- ============================================================================
 -- Functions
