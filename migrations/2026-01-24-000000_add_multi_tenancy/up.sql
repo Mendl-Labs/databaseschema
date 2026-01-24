@@ -97,7 +97,12 @@ ALTER TABLE backtest_results ADD COLUMN tenant_id UUID REFERENCES tenants(id) ON
 UPDATE backtest_results br
 SET tenant_id = bj.tenant_id
 FROM backtest_jobs bj
-WHERE br.job_id = bj.id AND br.tenant_id IS NULL;
+WHERE bj.result_id = br.id AND br.tenant_id IS NULL;
+
+-- For any orphaned results without a job, use default tenant
+UPDATE backtest_results
+SET tenant_id = (SELECT id FROM tenants WHERE company_name = 'Default Tenant (Migration)' LIMIT 1)
+WHERE tenant_id IS NULL;
 
 ALTER TABLE backtest_results ALTER COLUMN tenant_id SET NOT NULL;
 CREATE INDEX idx_backtest_results_tenant_id ON backtest_results(tenant_id);
