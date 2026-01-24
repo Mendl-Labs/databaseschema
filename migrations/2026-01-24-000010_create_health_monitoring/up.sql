@@ -85,10 +85,11 @@ CREATE TABLE health_checks (
 -- ============================================================================
 
 -- Individual health check results (time-series)
+-- Note: For TimescaleDB hypertables, PRIMARY KEY must include partitioning column, and FK constraints are not supported
 CREATE TABLE health_check_results (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    health_check_id UUID NOT NULL REFERENCES health_checks(id) ON DELETE CASCADE,
+    id UUID DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL,  -- No FK for hypertable
+    health_check_id UUID NOT NULL,  -- No FK for hypertable
     
     -- Result
     status health_status NOT NULL,
@@ -104,7 +105,10 @@ CREATE TABLE health_check_results (
     checked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     
     -- Partitioning support
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    
+    -- Composite primary key includes partitioning column
+    PRIMARY KEY (id, created_at)
 );
 
 -- Convert to hypertable for time-series optimization
@@ -158,11 +162,12 @@ CREATE TABLE service_status (
 -- ============================================================================
 
 -- Aggregated uptime statistics
+-- Note: For TimescaleDB hypertables, PRIMARY KEY must include partitioning column, and FK constraints are not supported
 CREATE TABLE uptime_records (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    service_id UUID REFERENCES service_status(id) ON DELETE CASCADE,
-    health_check_id UUID REFERENCES health_checks(id) ON DELETE CASCADE,
+    id UUID DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL,  -- No FK for hypertable
+    service_id UUID,  -- No FK for hypertable
+    health_check_id UUID,  -- No FK for hypertable
     
     -- Time period
     period_start TIMESTAMPTZ NOT NULL,
@@ -188,9 +193,8 @@ CREATE TABLE uptime_records (
     
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     
-    UNIQUE(tenant_id, COALESCE(service_id, '00000000-0000-0000-0000-000000000000'::uuid), 
-           COALESCE(health_check_id, '00000000-0000-0000-0000-000000000000'::uuid), 
-           period_start, period_type)
+    -- Composite primary key includes partitioning column
+    PRIMARY KEY (id, period_start)
 );
 
 -- Convert to hypertable
