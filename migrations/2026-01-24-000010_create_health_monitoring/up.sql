@@ -265,7 +265,7 @@ CREATE TABLE health_alert_rules (
     service_id UUID REFERENCES service_status(id) ON DELETE CASCADE,
     
     -- Conditions
-    trigger_on_status health_status[] DEFAULT ARRAY['unhealthy']::health_status[],
+    trigger_on_status TEXT[] DEFAULT ARRAY['unhealthy'],
     trigger_after_minutes INTEGER DEFAULT 5,
     
     -- Notification
