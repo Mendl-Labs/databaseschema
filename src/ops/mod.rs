@@ -1,9 +1,6 @@
 pub mod backtest_result_ops;
 pub mod candles_ops;
 pub mod exchange_ops;
-pub mod historical_order_ops;
-pub mod historical_snapshot_ops;
-pub mod l2_orderbook_snapshot_ops;
 pub mod open_buy_order_ops;
 pub mod open_sell_order_ops;
 pub mod order_book_ops;
@@ -13,5 +10,4 @@ pub mod sim_open_sell_order_ops;
 pub mod sim_trade_ops;
 pub mod strategy_ops;
 pub mod strategy_order_ops;
-pub mod trades_ops;
 pub mod wallet_balance_ops;

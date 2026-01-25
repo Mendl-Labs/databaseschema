@@ -273,66 +273,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    historical_orders (timestamp, event_id) {
-        event_id -> Uuid,
-        timestamp -> Timestamptz,
-        order_id -> Text,
-        event_type -> Text,
-        side -> Text,
-        price_level -> Numeric,
-        quantity -> Numeric,
-        prev_price -> Nullable<Numeric>,
-        prev_quantity -> Nullable<Numeric>,
-        status -> Text,
-        exchange -> Text,
-        symbol -> Text,
-        exchange_id -> Uuid,
-        security_id -> Uuid,
-        tenant_id -> Uuid,
-    }
-}
-
-diesel::table! {
-    historical_snapshot (timestamp, event_id) {
-        event_id -> Uuid,
-        timestamp -> Timestamptz,
-        order_id -> Text,
-        event_type -> Text,
-        side -> Text,
-        price_level -> Numeric,
-        quantity -> Numeric,
-        status -> Text,
-        exchange -> Text,
-        symbol -> Text,
-        exchange_id -> Uuid,
-        security_id -> Uuid,
-    }
-}
-
-diesel::table! {
-    /// Level 2 orderbook snapshots for exchanges without L3 data (Binance, Coinbase, etc.)
-    l2_orderbook_snapshots (timestamp, symbol, exchange) {
-        timestamp -> Timestamptz,
-        #[max_length = 10]
-        symbol -> Varchar,
-        #[max_length = 30]
-        exchange -> Varchar,
-        security_id -> Uuid,
-        exchange_id -> Uuid,
-        bid_prices -> Array<Numeric>,
-        bid_quantities -> Array<Numeric>,
-        ask_prices -> Array<Numeric>,
-        ask_quantities -> Array<Numeric>,
-        best_bid_price -> Nullable<Numeric>,
-        best_bid_quantity -> Nullable<Numeric>,
-        best_ask_price -> Nullable<Numeric>,
-        best_ask_quantity -> Nullable<Numeric>,
-        spread_bps -> Nullable<Numeric>,
-        created_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
     open_buy_orders (created_at, unique_id) {
         created_at -> Timestamptz,
         #[max_length = 7]
@@ -693,24 +633,6 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    trades (created_at, trade_id) {
-        created_at -> Timestamptz,
-        #[max_length = 7]
-        symbol -> Varchar,
-        #[max_length = 50]
-        exchange -> Varchar,
-        #[max_length = 255]
-        trade_id -> Varchar,
-        security_id -> Uuid,
-        exchange_id -> Uuid,
-        #[max_length = 4]
-        side -> Varchar,
-        price -> Numeric,
-        quantity -> Numeric,
-    }
-}
-
 diesel::joinable!(backtest_drawdown_periods -> backtest_results (backtest_result_id));
 diesel::joinable!(backtest_equity_curve -> backtest_results (backtest_result_id));
 diesel::joinable!(backtest_jobs -> backtest_results (result_id));
@@ -719,12 +641,6 @@ diesel::joinable!(backtest_report_access_log -> backtest_reports (report_id));
 diesel::joinable!(backtest_reports -> backtest_results (backtest_result_id));
 diesel::joinable!(backtest_results -> strategy_instances (strategy_instance_id));
 diesel::joinable!(backtest_trades -> backtest_results (backtest_result_id));
-diesel::joinable!(historical_orders -> exchanges (exchange_id));
-diesel::joinable!(historical_orders -> securities (security_id));
-diesel::joinable!(historical_snapshot -> exchanges (exchange_id));
-diesel::joinable!(historical_snapshot -> securities (security_id));
-diesel::joinable!(l2_orderbook_snapshots -> exchanges (exchange_id));
-diesel::joinable!(l2_orderbook_snapshots -> securities (security_id));
 diesel::joinable!(optimization_iterations -> optimization_runs (optimization_run_id));
 diesel::joinable!(optimization_runs -> strategies (strategy_id));
 diesel::joinable!(strategy_instances -> strategies (strategy_id));
@@ -895,9 +811,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     current_balances,
     data_cache_status,
     exchanges,
-    historical_orders,
-    historical_snapshot,
-    l2_orderbook_snapshots,
     open_buy_orders,
     open_sell_orders,
     optimization_iterations,
@@ -916,7 +829,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     strategy_parameters,
     tenant_data_sources,
     tenants,
-    trades,
     users,
     wallet_balances,
 );
