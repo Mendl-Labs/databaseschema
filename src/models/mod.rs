@@ -10,9 +10,6 @@ pub mod backtest_job;
 pub mod backtest_result;
 pub mod candles;
 pub mod exchange;
-pub mod historical_order;
-pub mod historical_snapshot;
-pub mod l2_orderbook_snapshot;
 pub mod open_buy_order;
 pub mod open_sell_order;
 pub mod order_book;
@@ -22,7 +19,6 @@ pub mod sim_open_sell_order;
 pub mod sim_trade;
 pub mod strategy;
 pub mod strategy_order;
-pub mod trade;
 pub mod wallet_balance;
 
 // Re-export commonly used types
