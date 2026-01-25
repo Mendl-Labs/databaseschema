@@ -25,6 +25,10 @@ pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "subscription_tier"))]
     pub struct SubscriptionTier;
+
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "approval_status"))]
+    pub struct ApprovalStatus;
 }
 
 diesel::table! {
@@ -428,6 +432,9 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::ApprovalStatus;
+
     strategies (id) {
         id -> Uuid,
         tenant_id -> Uuid,
@@ -445,6 +452,15 @@ diesel::table! {
         metadata -> Nullable<Jsonb>,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
+        // Approval workflow columns
+        approval_status -> ApprovalStatus,
+        approved_at -> Nullable<Timestamptz>,
+        #[max_length = 255]
+        approved_by -> Nullable<Varchar>,
+        rejection_reason -> Nullable<Text>,
+        submitted_for_approval_at -> Nullable<Timestamptz>,
+        initial_capital -> Nullable<Numeric>,
+        target_exchanges -> Nullable<Array<Nullable<Text>>>,
     }
 }
 
@@ -467,6 +483,9 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::ApprovalStatus;
+
     strategy_instances (id) {
         id -> Uuid,
         tenant_id -> Uuid,
@@ -485,6 +504,15 @@ diesel::table! {
         optimization_score -> Nullable<Numeric>,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
+        // Approval workflow columns
+        approval_status -> ApprovalStatus,
+        approved_at -> Nullable<Timestamptz>,
+        #[max_length = 255]
+        approved_by -> Nullable<Varchar>,
+        is_active -> Bool,
+        deployed_at -> Nullable<Timestamptz>,
+        deactivated_at -> Nullable<Timestamptz>,
+        deactivation_reason -> Nullable<Text>,
     }
 }
 
@@ -633,6 +661,25 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    strategy_approval_history (id) {
+        id -> Uuid,
+        strategy_id -> Uuid,
+        instance_id -> Nullable<Uuid>,
+        #[max_length = 50]
+        action -> Varchar,
+        #[max_length = 50]
+        previous_status -> Nullable<Varchar>,
+        #[max_length = 50]
+        new_status -> Nullable<Varchar>,
+        #[max_length = 255]
+        performed_by -> Varchar,
+        reason -> Nullable<Text>,
+        metadata -> Nullable<Jsonb>,
+        created_at -> Timestamptz,
+    }
+}
+
 diesel::joinable!(backtest_drawdown_periods -> backtest_results (backtest_result_id));
 diesel::joinable!(backtest_equity_curve -> backtest_results (backtest_result_id));
 diesel::joinable!(backtest_jobs -> backtest_results (result_id));
@@ -645,6 +692,7 @@ diesel::joinable!(optimization_iterations -> optimization_runs (optimization_run
 diesel::joinable!(optimization_runs -> strategies (strategy_id));
 diesel::joinable!(strategy_instances -> strategies (strategy_id));
 diesel::joinable!(strategy_parameters -> strategies (strategy_id));
+diesel::joinable!(strategy_approval_history -> strategies (strategy_id));
 
 diesel::table! {
     wallet_balances (exchange, asset, wallet_type, wallet_id, timestamp) {
@@ -821,6 +869,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     sim_open_sell_orders,
     sim_trades,
     strategies,
+    strategy_approval_history,
     strategy_comparisons,
     strategy_instances,
     strategy_order_fills,
