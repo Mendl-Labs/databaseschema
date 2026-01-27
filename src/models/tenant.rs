@@ -137,6 +137,42 @@ impl NewTenant {
     }
 }
 
+/// Insertable record for new tenants with explicit ID (for Clerk org_id mapping)
+#[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
+#[diesel(table_name = crate::schema::tenants)]
+pub struct NewTenantWithId {
+    pub id: Uuid,
+    pub company_name: String,
+    pub slug: String,
+    pub subscription_tier: SubscriptionTier,
+    pub api_rate_limit: i32,
+    pub max_concurrent_backtests: i32,
+    pub max_strategies: i32,
+    pub historical_data_months: i32,
+    pub features: serde_json::Value,
+    pub settings: serde_json::Value,
+    pub is_active: bool,
+}
+
+impl NewTenantWithId {
+    /// Create a new tenant with the specified ID and Starter tier defaults
+    pub fn with_id(id: Uuid, company_name: String, slug: String) -> Self {
+        Self {
+            id,
+            company_name,
+            slug,
+            subscription_tier: SubscriptionTier::Starter,
+            api_rate_limit: 1000,
+            max_concurrent_backtests: 3,
+            max_strategies: 25,
+            historical_data_months: 12,
+            features: serde_json::json!({}),
+            settings: serde_json::json!({}),
+            is_active: true,
+        }
+    }
+}
+
 /// Updateable fields for tenants
 #[derive(Debug, Clone, AsChangeset, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::tenants)]

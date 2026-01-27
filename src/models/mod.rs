@@ -24,6 +24,6 @@ pub mod wallet_balance;
 // Re-export commonly used types
 pub use audit_log::{AuditAction, AuditLog, AuditLogBuilder, NewAuditLog};
 pub use data_cache_status::{DataCacheStatus, DataGap, DataSource, DataType, NewDataCacheStatus};
-pub use tenant::{NewTenant, SubscriptionTier, Tenant, TenantUpdate};
+pub use tenant::{NewTenant, NewTenantWithId, SubscriptionTier, Tenant, TenantUpdate};
 pub use tenant_data_source::{NewTenantDataSource, TenantDataSource, TenantDataSourceUpdate};
 pub use user::{NewUser, User, UserInfo, UserRole, UserUpdate};
