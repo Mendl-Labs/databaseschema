@@ -268,6 +268,37 @@ diesel::table! {
 }
 
 diesel::table! {
+    deployed_strategies (id) {
+        id -> Uuid,
+        tenant_id -> Uuid,
+        backtest_result_id -> Uuid,
+        #[max_length = 255]
+        name -> Varchar,
+        description -> Nullable<Text>,
+        capital_allocation -> Numeric,
+        exchange_targets -> Array<Nullable<Text>>,
+        max_position_size -> Nullable<Numeric>,
+        max_daily_loss -> Nullable<Numeric>,
+        max_drawdown_pct -> Nullable<Numeric>,
+        is_active -> Bool,
+        deployed_at -> Timestamptz,
+        #[max_length = 255]
+        deployed_by -> Nullable<Varchar>,
+        stopped_at -> Nullable<Timestamptz>,
+        #[max_length = 255]
+        stopped_by -> Nullable<Varchar>,
+        stop_reason -> Nullable<Text>,
+        live_pnl -> Nullable<Numeric>,
+        live_trades -> Nullable<Int4>,
+        last_signal_at -> Nullable<Timestamptz>,
+        last_trade_at -> Nullable<Timestamptz>,
+        metadata -> Nullable<Jsonb>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     exchanges (exchange_id) {
         created_at -> Timestamptz,
         exchange_id -> Uuid,
@@ -688,6 +719,8 @@ diesel::joinable!(backtest_report_access_log -> backtest_reports (report_id));
 diesel::joinable!(backtest_reports -> backtest_results (backtest_result_id));
 diesel::joinable!(backtest_results -> strategy_instances (strategy_instance_id));
 diesel::joinable!(backtest_trades -> backtest_results (backtest_result_id));
+diesel::joinable!(deployed_strategies -> backtest_results (backtest_result_id));
+diesel::joinable!(deployed_strategies -> tenants (tenant_id));
 diesel::joinable!(optimization_iterations -> optimization_runs (optimization_run_id));
 diesel::joinable!(optimization_runs -> strategies (strategy_id));
 diesel::joinable!(strategy_instances -> strategies (strategy_id));
@@ -858,6 +891,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     backtest_trades,
     current_balances,
     data_cache_status,
+    deployed_strategies,
     exchanges,
     open_buy_orders,
     open_sell_orders,
