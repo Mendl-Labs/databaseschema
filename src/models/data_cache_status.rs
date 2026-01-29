@@ -67,6 +67,7 @@ pub struct DataGap {
 }
 
 /// Queryable record for data_cache_status table
+/// Schema: id, exchange, symbol, data_type, earliest_timestamp, latest_timestamp, row_count, last_updated
 #[derive(Debug, Clone, Queryable, Identifiable, Selectable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::data_cache_status)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
@@ -75,32 +76,36 @@ pub struct DataCacheStatus {
     pub exchange: String,
     pub symbol: String,
     pub data_type: String,
-    pub earliest_date: DateTime<Utc>,
-    pub latest_date: DateTime<Utc>,
-    pub record_count: i64,
-    pub source: String,
+    pub earliest_timestamp: DateTime<Utc>,
+    pub latest_timestamp: DateTime<Utc>,
+    pub row_count: i64,
     pub last_updated: DateTime<Utc>,
-    pub is_complete: bool,
-    pub gaps: Option<serde_json::Value>,
 }
 
 impl DataCacheStatus {
-    /// Parse the gaps JSON into a vector of DataGap structs
-    pub fn gaps_list(&self) -> Vec<DataGap> {
-        self.gaps
-            .as_ref()
-            .and_then(|v| serde_json::from_value(v.clone()).ok())
-            .unwrap_or_default()
-    }
-
     /// Calculate the date range coverage
     pub fn coverage_days(&self) -> i64 {
-        (self.latest_date - self.earliest_date).num_days()
+        (self.latest_timestamp - self.earliest_timestamp).num_days()
     }
 
     /// Check if data is available for a specific date range
     pub fn covers_range(&self, start: DateTime<Utc>, end: DateTime<Utc>) -> bool {
-        self.earliest_date <= start && self.latest_date >= end
+        self.earliest_timestamp <= start && self.latest_timestamp >= end
+    }
+
+    /// Alias for earliest_timestamp for backward compatibility
+    pub fn earliest_date(&self) -> DateTime<Utc> {
+        self.earliest_timestamp
+    }
+
+    /// Alias for latest_timestamp for backward compatibility
+    pub fn latest_date(&self) -> DateTime<Utc> {
+        self.latest_timestamp
+    }
+
+    /// Alias for row_count for backward compatibility
+    pub fn record_count(&self) -> i64 {
+        self.row_count
     }
 }
 
@@ -111,13 +116,10 @@ pub struct NewDataCacheStatus {
     pub exchange: String,
     pub symbol: String,
     pub data_type: String,
-    pub earliest_date: DateTime<Utc>,
-    pub latest_date: DateTime<Utc>,
-    pub record_count: i64,
-    pub source: String,
-    pub last_updated: DateTime<Utc>,
-    pub is_complete: Option<bool>,
-    pub gaps: Option<serde_json::Value>,
+    pub earliest_timestamp: DateTime<Utc>,
+    pub latest_timestamp: DateTime<Utc>,
+    pub row_count: i64,
+    pub last_updated: Option<DateTime<Utc>>,
 }
 
 impl NewDataCacheStatus {
@@ -126,45 +128,31 @@ impl NewDataCacheStatus {
         exchange: &str,
         symbol: &str,
         data_type: DataType,
-        source: DataSource,
-        earliest_date: DateTime<Utc>,
-        latest_date: DateTime<Utc>,
-        record_count: i64,
+        _source: DataSource, // Kept for API compatibility but not stored
+        earliest_timestamp: DateTime<Utc>,
+        latest_timestamp: DateTime<Utc>,
+        row_count: i64,
     ) -> Self {
         Self {
             exchange: exchange.to_string(),
             symbol: symbol.to_string(),
             data_type: data_type.to_string(),
-            earliest_date,
-            latest_date,
-            record_count,
-            source: source.to_string(),
-            last_updated: Utc::now(),
-            is_complete: Some(true),
-            gaps: None,
+            earliest_timestamp,
+            latest_timestamp,
+            row_count,
+            last_updated: Some(Utc::now()),
         }
-    }
-
-    /// Add gap information
-    pub fn with_gaps(mut self, gaps: Vec<DataGap>) -> Self {
-        if !gaps.is_empty() {
-            self.gaps = serde_json::to_value(&gaps).ok();
-            self.is_complete = Some(false);
-        }
-        self
     }
 }
 
 /// Updateable fields for data cache status
-#[derive(Debug, Clone, AsChangeset, Serialize, Deserialize)]
+#[derive(Debug, Clone, AsChangeset, Serialize, Deserialize, Default)]
 #[diesel(table_name = crate::schema::data_cache_status)]
 pub struct DataCacheStatusUpdate {
-    pub earliest_date: Option<DateTime<Utc>>,
-    pub latest_date: Option<DateTime<Utc>>,
-    pub record_count: Option<i64>,
+    pub earliest_timestamp: Option<DateTime<Utc>>,
+    pub latest_timestamp: Option<DateTime<Utc>>,
+    pub row_count: Option<i64>,
     pub last_updated: Option<DateTime<Utc>>,
-    pub is_complete: Option<bool>,
-    pub gaps: Option<serde_json::Value>,
 }
 
 /// Summary of available data for an exchange

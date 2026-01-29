@@ -61,6 +61,7 @@ impl std::fmt::Display for ApprovalStatus {
 
 // ============================================================================
 // Strategy Model (with approval workflow columns)
+// Field order must match schema.rs: tenant_id comes AFTER updated_at
 // ============================================================================
 
 #[derive(Debug, Clone, Queryable, Identifiable, Selectable, Serialize, Deserialize)]
@@ -68,7 +69,6 @@ impl std::fmt::Display for ApprovalStatus {
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Strategy {
     pub id: Uuid,
-    pub tenant_id: Uuid,
     pub strategy_name: String,
     pub strategy_type: String,
     pub version: String,
@@ -79,6 +79,7 @@ pub struct Strategy {
     pub metadata: Option<serde_json::Value>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub tenant_id: Uuid,  // tenant_id is AFTER updated_at in schema
     // Approval workflow columns
     pub approval_status: ApprovalStatus,
     pub approved_at: Option<DateTime<Utc>>,
@@ -159,12 +160,12 @@ pub struct NewStrategyParameter {
     pub optimization_step: Option<BigDecimal>,
 }
 
+/// Field order must match schema.rs: tenant_id comes AFTER updated_at
 #[derive(Debug, Clone, Queryable, Identifiable, Selectable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::strategy_instances)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct StrategyInstance {
     pub id: Uuid,
-    pub tenant_id: Uuid,
     pub strategy_id: Uuid,
     pub instance_name: Option<String>,
     pub description: Option<String>,
@@ -178,6 +179,7 @@ pub struct StrategyInstance {
     pub optimization_score: Option<BigDecimal>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub tenant_id: Uuid,  // tenant_id is AFTER updated_at in schema
     // Approval workflow columns
     pub approval_status: ApprovalStatus,
     pub approved_at: Option<DateTime<Utc>>,

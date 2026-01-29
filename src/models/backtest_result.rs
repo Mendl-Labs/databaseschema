@@ -4,11 +4,13 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+/// Queryable record for backtest_results table
+/// Field order must match schema.rs exactly
 #[derive(Debug, Clone, Queryable, Identifiable, Selectable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::backtest_results)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct BacktestResult {
     pub id: Uuid,
-    pub tenant_id: Uuid,
     pub backtest_id: Uuid,
     pub strategy_name: String,
     pub symbol: String,
@@ -65,6 +67,7 @@ pub struct BacktestResult {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub strategy_instance_id: Option<Uuid>,
+    pub tenant_id: Uuid,  // tenant_id is at the END in schema
 }
 
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]

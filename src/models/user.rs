@@ -49,6 +49,8 @@ impl Default for UserRole {
 }
 
 /// Queryable record for users table
+/// Schema: id, tenant_id, email, password_hash, full_name, role, is_verified,
+///         verification_token, reset_token, reset_token_expires_at, last_login_at, created_at, updated_at
 #[derive(Debug, Clone, Queryable, Identifiable, Selectable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::users)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
@@ -57,12 +59,12 @@ pub struct User {
     pub tenant_id: Uuid,
     pub email: String,
     pub password_hash: Option<String>,
-    pub name: Option<String>,
+    pub full_name: Option<String>,
     pub role: String,
-    pub auth_provider: Option<String>,
-    pub auth_provider_id: Option<String>,
-    pub email_verified: bool,
-    pub is_active: bool,
+    pub is_verified: bool,
+    pub verification_token: Option<String>,
+    pub reset_token: Option<String>,
+    pub reset_token_expires_at: Option<DateTime<Utc>>,
     pub last_login_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -88,6 +90,11 @@ impl User {
     pub fn can_edit(&self) -> bool {
         matches!(self.role.as_str(), "owner" | "admin" | "analyst")
     }
+
+    /// Check if user's email is verified
+    pub fn email_verified(&self) -> bool {
+        self.is_verified
+    }
 }
 
 /// Insertable record for new users
@@ -97,12 +104,10 @@ pub struct NewUser {
     pub tenant_id: Uuid,
     pub email: String,
     pub password_hash: Option<String>,
-    pub name: Option<String>,
+    pub full_name: Option<String>,
     pub role: String,
-    pub auth_provider: Option<String>,
-    pub auth_provider_id: Option<String>,
-    pub email_verified: Option<bool>,
-    pub is_active: Option<bool>,
+    pub is_verified: Option<bool>,
+    pub verification_token: Option<String>,
 }
 
 impl NewUser {
@@ -112,47 +117,39 @@ impl NewUser {
             tenant_id,
             email,
             password_hash: Some(password_hash),
-            name: None,
+            full_name: None,
             role: role.to_string(),
-            auth_provider: None,
-            auth_provider_id: None,
-            email_verified: Some(false),
-            is_active: Some(true),
+            is_verified: Some(false),
+            verification_token: Some(Uuid::new_v4().to_string()), // Generate verification token
         }
     }
 
-    /// Create a new user with OAuth provider (Auth0, Clerk, etc.)
-    pub fn with_oauth(
-        tenant_id: Uuid,
-        email: String,
-        provider: String,
-        provider_id: String,
-        role: UserRole,
-    ) -> Self {
+    /// Create a new pre-verified user (e.g., from admin invite)
+    pub fn verified(tenant_id: Uuid, email: String, password_hash: String, role: UserRole) -> Self {
         Self {
             tenant_id,
             email,
-            password_hash: None,
-            name: None,
+            password_hash: Some(password_hash),
+            full_name: None,
             role: role.to_string(),
-            auth_provider: Some(provider),
-            auth_provider_id: Some(provider_id),
-            email_verified: Some(true), // OAuth providers verify email
-            is_active: Some(true),
+            is_verified: Some(true),
+            verification_token: None,
         }
     }
 }
 
 /// Updateable fields for users
-#[derive(Debug, Clone, AsChangeset, Serialize, Deserialize)]
+#[derive(Debug, Clone, AsChangeset, Serialize, Deserialize, Default)]
 #[diesel(table_name = crate::schema::users)]
 pub struct UserUpdate {
     pub email: Option<String>,
     pub password_hash: Option<String>,
-    pub name: Option<String>,
+    pub full_name: Option<String>,
     pub role: Option<String>,
-    pub email_verified: Option<bool>,
-    pub is_active: Option<bool>,
+    pub is_verified: Option<bool>,
+    pub verification_token: Option<String>,
+    pub reset_token: Option<String>,
+    pub reset_token_expires_at: Option<DateTime<Utc>>,
     pub last_login_at: Option<DateTime<Utc>>,
     pub updated_at: Option<DateTime<Utc>>,
 }
@@ -173,7 +170,7 @@ impl From<User> for UserInfo {
             id: user.id,
             tenant_id: user.tenant_id,
             email: user.email,
-            name: user.name,
+            name: user.full_name,
             role: user.role,
         }
     }

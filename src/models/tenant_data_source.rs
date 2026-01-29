@@ -1,7 +1,7 @@
 //! Tenant data source models for per-tenant exchange configuration
 //!
 //! These models track which exchanges and symbols are enabled for each tenant,
-//! along with any tenant-specific API credentials for live data access.
+//! along with request quota management.
 
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// Queryable record for tenant_data_sources table
+/// Schema: id, tenant_id, exchange, enabled, symbols (array), daily_request_quota,
+///         requests_used_today, quota_reset_at, created_at, updated_at
 #[derive(Debug, Clone, Queryable, Identifiable, Selectable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::tenant_data_sources)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
@@ -16,25 +18,37 @@ pub struct TenantDataSource {
     pub id: Uuid,
     pub tenant_id: Uuid,
     pub exchange: String,
-    pub symbol: String,
-    pub is_enabled: bool,
-    pub api_key_encrypted: Option<String>,
-    pub api_secret_encrypted: Option<String>,
-    pub passphrase_encrypted: Option<String>,
-    pub settings: Option<serde_json::Value>,
+    pub enabled: bool,
+    pub symbols: Vec<Option<String>>,
+    pub daily_request_quota: Option<i32>,
+    pub requests_used_today: i32,
+    pub quota_reset_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
 impl TenantDataSource {
-    /// Check if this data source has API credentials configured
-    pub fn has_credentials(&self) -> bool {
-        self.api_key_encrypted.is_some()
+    /// Check if this data source is enabled
+    pub fn is_enabled(&self) -> bool {
+        self.enabled
     }
 
-    /// Get the settings as a strongly-typed struct
-    pub fn settings_as<T: for<'de> Deserialize<'de>>(&self) -> Option<T> {
-        self.settings.as_ref().and_then(|s| serde_json::from_value(s.clone()).ok())
+    /// Get the list of enabled symbols (filtering out None values)
+    pub fn get_symbols(&self) -> Vec<String> {
+        self.symbols.iter().filter_map(|s| s.clone()).collect()
+    }
+
+    /// Check if quota is available for more requests
+    pub fn has_quota_available(&self) -> bool {
+        match self.daily_request_quota {
+            Some(quota) => self.requests_used_today < quota,
+            None => true, // No quota limit
+        }
+    }
+
+    /// Get remaining quota
+    pub fn remaining_quota(&self) -> Option<i32> {
+        self.daily_request_quota.map(|quota| quota - self.requests_used_today)
     }
 }
 
@@ -44,94 +58,56 @@ impl TenantDataSource {
 pub struct NewTenantDataSource {
     pub tenant_id: Uuid,
     pub exchange: String,
-    pub symbol: String,
-    pub is_enabled: Option<bool>,
-    pub api_key_encrypted: Option<String>,
-    pub api_secret_encrypted: Option<String>,
-    pub passphrase_encrypted: Option<String>,
-    pub settings: Option<serde_json::Value>,
+    pub enabled: Option<bool>,
+    pub symbols: Vec<Option<String>>,
+    pub daily_request_quota: Option<i32>,
+    pub requests_used_today: Option<i32>,
+    pub quota_reset_at: Option<DateTime<Utc>>,
 }
 
 impl NewTenantDataSource {
-    /// Create a new tenant data source (historical data only, no API keys)
-    pub fn new(tenant_id: Uuid, exchange: &str, symbol: &str) -> Self {
+    /// Create a new tenant data source
+    pub fn new(tenant_id: Uuid, exchange: &str, symbols: Vec<String>) -> Self {
         Self {
             tenant_id,
             exchange: exchange.to_string(),
-            symbol: symbol.to_string(),
-            is_enabled: Some(true),
-            api_key_encrypted: None,
-            api_secret_encrypted: None,
-            passphrase_encrypted: None,
-            settings: None,
+            enabled: Some(true),
+            symbols: symbols.into_iter().map(Some).collect(),
+            daily_request_quota: None,
+            requests_used_today: Some(0),
+            quota_reset_at: Some(Utc::now()),
         }
     }
 
-    /// Create a new tenant data source with API credentials for live data
-    pub fn with_credentials(
+    /// Create a new tenant data source with quota
+    pub fn with_quota(
         tenant_id: Uuid,
         exchange: &str,
-        symbol: &str,
-        api_key_encrypted: String,
-        api_secret_encrypted: String,
-        passphrase_encrypted: Option<String>,
+        symbols: Vec<String>,
+        daily_quota: i32,
     ) -> Self {
         Self {
             tenant_id,
             exchange: exchange.to_string(),
-            symbol: symbol.to_string(),
-            is_enabled: Some(true),
-            api_key_encrypted: Some(api_key_encrypted),
-            api_secret_encrypted: Some(api_secret_encrypted),
-            passphrase_encrypted,
-            settings: None,
+            enabled: Some(true),
+            symbols: symbols.into_iter().map(Some).collect(),
+            daily_request_quota: Some(daily_quota),
+            requests_used_today: Some(0),
+            quota_reset_at: Some(Utc::now()),
         }
-    }
-
-    /// Add custom settings
-    pub fn with_settings<T: Serialize>(mut self, settings: &T) -> Self {
-        self.settings = serde_json::to_value(settings).ok();
-        self
     }
 }
 
 /// Updateable fields for tenant data sources
-#[derive(Debug, Clone, AsChangeset, Serialize, Deserialize)]
+#[derive(Debug, Clone, AsChangeset, Serialize, Deserialize, Default)]
 #[diesel(table_name = crate::schema::tenant_data_sources)]
 pub struct TenantDataSourceUpdate {
-    pub is_enabled: Option<bool>,
-    pub api_key_encrypted: Option<String>,
-    pub api_secret_encrypted: Option<String>,
-    pub passphrase_encrypted: Option<String>,
-    pub settings: Option<serde_json::Value>,
+    pub enabled: Option<bool>,
+    pub symbols: Option<Vec<Option<String>>>,
+    pub daily_request_quota: Option<i32>,
+    pub requests_used_today: Option<i32>,
+    pub quota_reset_at: Option<DateTime<Utc>>,
     pub updated_at: Option<DateTime<Utc>>,
-}
-
-/// Exchange-specific settings that can be stored in the settings JSON field
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ExchangeSettings {
-    /// Whether to enable live data streaming
-    pub live_streaming_enabled: bool,
-    /// Rate limit override (requests per minute)
-    pub rate_limit_override: Option<i32>,
-    /// Custom API endpoint (for private/dedicated APIs)
-    pub custom_endpoint: Option<String>,
-    /// Whether this is a testnet/sandbox connection
-    pub is_testnet: bool,
-    /// Additional exchange-specific options
-    pub extra: Option<serde_json::Value>,
-}
-
-impl Default for ExchangeSettings {
-    fn default() -> Self {
-        Self {
-            live_streaming_enabled: false,
-            rate_limit_override: None,
-            custom_endpoint: None,
-            is_testnet: false,
-            extra: None,
-        }
-    }
 }
 
 /// Summary of a tenant's data source configuration
@@ -142,5 +118,4 @@ pub struct TenantDataSourceSummary {
     pub enabled_sources: i64,
     pub exchanges: Vec<String>,
     pub symbols: Vec<String>,
-    pub has_live_credentials: bool,
 }
