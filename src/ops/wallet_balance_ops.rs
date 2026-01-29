@@ -13,10 +13,10 @@ use crate::{debug, info, warn, error};
 /// Insert a single wallet balance record
 pub async fn create_wallet_balance(
     pool: Arc<deadpool::Pool<AsyncPgConnection>>,
-    balance: NewWalletBalance
+    new_balance: NewWalletBalance
 ) -> Result<WalletBalance, Error> {
     debug!("Creating wallet balance: exchange={}, asset={}, wallet_id={}", 
-        balance.exchange, balance.asset, balance.wallet_id);
+        new_balance.exchange, new_balance.asset, new_balance.wallet_id);
     
     use crate::schema::wallet_balances::dsl::*;
 
@@ -34,7 +34,7 @@ pub async fn create_wallet_balance(
             })?;
 
         diesel::insert_into(wallet_balances)
-            .values(&balance)
+            .values(&new_balance)
             .get_result(&mut connection)
             .await
             .map_err(|e| {
@@ -252,8 +252,8 @@ pub async fn get_non_zero_balances(
 
         current_balances
             .filter(exchange.eq(xchange))
-            .filter(total.gt(&zero))
-            .order(total.desc())
+            .filter(balance.gt(&zero))
+            .order(balance.desc())
             .load(&mut connection)
             .await
             .map_err(|e| {
