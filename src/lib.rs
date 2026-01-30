@@ -1,3 +1,5 @@
+#![recursion_limit = "512"]
+
 #[macro_use]
 pub mod logging_facade;
 pub mod ops;
