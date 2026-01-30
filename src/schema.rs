@@ -1200,6 +1200,31 @@ diesel::table! {
 }
 
 diesel::table! {
+    exchange_credentials (id) {
+        id -> Uuid,
+        tenant_id -> Uuid,
+        #[max_length = 50]
+        exchange -> Varchar,
+        #[max_length = 255]
+        label -> Varchar,
+        api_key_encrypted -> Text,
+        api_secret_encrypted -> Text,
+        passphrase_encrypted -> Nullable<Text>,
+        is_testnet -> Bool,
+        is_enabled -> Bool,
+        permissions -> Nullable<Jsonb>,
+        rate_limit_per_second -> Nullable<Int4>,
+        rate_limit_per_minute -> Nullable<Int4>,
+        last_validated_at -> Nullable<Timestamptz>,
+        is_valid -> Nullable<Bool>,
+        validation_error -> Nullable<Text>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+        created_by -> Nullable<Uuid>,
+    }
+}
+
+diesel::table! {
     error_activity (id) {
         id -> Uuid,
         fingerprint_id -> Uuid,
@@ -3399,6 +3424,36 @@ diesel::table! {
 }
 
 diesel::table! {
+    user_preferences (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        tenant_id -> Uuid,
+        #[max_length = 100]
+        timezone -> Varchar,
+        #[max_length = 20]
+        theme -> Varchar,
+        #[max_length = 10]
+        language -> Varchar,
+        #[max_length = 10]
+        default_chart_interval -> Nullable<Varchar>,
+        #[max_length = 50]
+        default_exchange -> Nullable<Varchar>,
+        show_portfolio_value -> Nullable<Bool>,
+        compact_mode -> Nullable<Bool>,
+        email_notifications_enabled -> Nullable<Bool>,
+        email_backtest_complete -> Nullable<Bool>,
+        email_deployment_alerts -> Nullable<Bool>,
+        email_risk_warnings -> Nullable<Bool>,
+        email_weekly_summary -> Nullable<Bool>,
+        push_notifications_enabled -> Nullable<Bool>,
+        push_trade_executions -> Nullable<Bool>,
+        push_price_alerts -> Nullable<Bool>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     wallet_balances (id, timestamp) {
         id -> Uuid,
         #[max_length = 50]
@@ -3514,6 +3569,8 @@ diesel::joinable!(domain_ssl_certificates -> custom_domains (domain_id));
 diesel::joinable!(domain_verification_attempts -> custom_domains (domain_id));
 diesel::joinable!(email_notifications -> tenants (tenant_id));
 diesel::joinable!(email_templates -> tenants (tenant_id));
+diesel::joinable!(exchange_credentials -> tenants (tenant_id));
+diesel::joinable!(exchange_credentials -> users (created_by));
 diesel::joinable!(error_activity -> error_fingerprints (fingerprint_id));
 diesel::joinable!(error_alert_rules -> tenants (tenant_id));
 diesel::joinable!(error_comments -> error_fingerprints (fingerprint_id));
@@ -3600,6 +3657,8 @@ diesel::joinable!(usage_daily_aggregates -> tenants (tenant_id));
 diesel::joinable!(usage_monthly_summary -> tenants (tenant_id));
 diesel::joinable!(user_data_inventory -> consent_records (consent_record_id));
 diesel::joinable!(user_data_inventory -> tenants (tenant_id));
+diesel::joinable!(user_preferences -> tenants (tenant_id));
+diesel::joinable!(user_preferences -> users (user_id));
 diesel::joinable!(users -> tenants (tenant_id));
 diesel::joinable!(webhook_deliveries -> tenants (tenant_id));
 diesel::joinable!(webhook_deliveries -> webhook_endpoints (endpoint_id));
@@ -3649,6 +3708,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     error_fingerprints,
     error_occurrences,
     error_stats_hourly,
+    exchange_credentials,
     exchanges,
     export_jobs,
     export_quotas,
@@ -3729,6 +3789,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     usage_events,
     usage_monthly_summary,
     user_data_inventory,
+    user_preferences,
     users,
     wallet_balances,
     webhook_deliveries,
