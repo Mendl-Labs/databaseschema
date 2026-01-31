@@ -3529,6 +3529,56 @@ diesel::table! {
     }
 }
 
+// Live trading tables
+diesel::table! {
+    trade_history (id) {
+        id -> Uuid,
+        tenant_id -> Uuid,
+        deployment_id -> Uuid,
+        #[max_length = 50]
+        exchange -> Varchar,
+        #[max_length = 50]
+        symbol -> Varchar,
+        #[max_length = 10]
+        side -> Varchar,
+        quantity -> Numeric,
+        price -> Numeric,
+        #[max_length = 50]
+        quote_currency -> Varchar,
+        value -> Numeric,
+        commission -> Numeric,
+        #[max_length = 50]
+        commission_asset -> Varchar,
+        realized_pnl -> Nullable<Numeric>,
+        #[max_length = 255]
+        exchange_trade_id -> Varchar,
+        #[max_length = 255]
+        exchange_order_id -> Varchar,
+        executed_at -> Timestamptz,
+        recorded_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    pnl_snapshots (snapshot_at, tenant_id) {
+        id -> Uuid,
+        tenant_id -> Uuid,
+        snapshot_at -> Timestamptz,
+        total_pnl -> Numeric,
+        realized_pnl -> Numeric,
+        unrealized_pnl -> Numeric,
+        daily_pnl -> Numeric,
+        total_capital -> Numeric,
+        total_equity -> Numeric,
+        by_exchange -> Jsonb,
+        by_deployment -> Jsonb,
+        trades_count -> Int4,
+        winning_trades -> Int4,
+        losing_trades -> Int4,
+        created_at -> Timestamptz,
+    }
+}
+
 diesel::joinable!(audit_logs -> tenants (tenant_id));
 diesel::joinable!(audit_logs -> users (user_id));
 diesel::joinable!(backtest_drawdown_periods -> backtest_results (backtest_result_id));
@@ -3742,6 +3792,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     optimization_runs,
     order_books,
     pitr_checkpoints,
+    pnl_snapshots,
     privacy_settings,
     processing_activities,
     restore_jobs,
@@ -3783,6 +3834,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     ticket_messages,
     ticket_sla_policies,
     ticket_watchers,
+    trade_history,
     trades,
     uptime_records,
     usage_daily_aggregates,

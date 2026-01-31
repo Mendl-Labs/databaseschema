@@ -7,6 +7,10 @@ pub mod tenant_data_source;
 pub mod user;
 pub mod user_preference;
 
+// Live trading models
+pub mod pnl_snapshot;
+pub mod trade_history;
+
 // Core models
 pub mod backtest_job;
 pub mod backtest_result;
@@ -33,3 +37,7 @@ pub use tenant::{NewTenant, NewTenantWithId, SubscriptionTier, Tenant, TenantUpd
 pub use tenant_data_source::{NewTenantDataSource, TenantDataSource, TenantDataSourceUpdate};
 pub use user::{NewUser, User, UserInfo, UserRole, UserUpdate};
 pub use user_preference::{NewUserPreference, UpdateUserPreference, UserPreference};
+
+// Live trading re-exports
+pub use pnl_snapshot::{DeploymentPnL, ExchangePnL, NewPnLSnapshot, PnLSnapshot};
+pub use trade_history::{NewTradeRecord, TradeRecord, TradeSide};
