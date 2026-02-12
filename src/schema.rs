@@ -995,6 +995,10 @@ diesel::table! {
         metadata -> Nullable<Jsonb>,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
+        // Diversity preservation columns (added 2026-02-11)
+        behavioral_signature -> Nullable<Jsonb>,
+        parameter_hash -> Nullable<Int8>,
+        current_aum -> Nullable<Numeric>,
     }
 }
 
