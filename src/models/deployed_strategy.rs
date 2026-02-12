@@ -37,6 +37,10 @@ pub struct DeployedStrategy {
     pub metadata: Option<serde_json::Value>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    // Diversity preservation columns
+    pub behavioral_signature: Option<serde_json::Value>,
+    pub parameter_hash: Option<i64>,
+    pub current_aum: Option<BigDecimal>,
 }
 
 /// New deployed strategy for insertion
@@ -54,6 +58,9 @@ pub struct NewDeployedStrategy {
     pub max_drawdown_pct: Option<BigDecimal>,
     pub deployed_by: Option<String>,
     pub metadata: Option<serde_json::Value>,
+    // Diversity preservation columns
+    pub behavioral_signature: Option<serde_json::Value>,
+    pub parameter_hash: Option<i64>,
 }
 
 /// Update deployed strategy
@@ -100,4 +107,13 @@ pub struct UpdateLivePerformance {
     pub live_trades: Option<i32>,
     pub last_signal_at: Option<DateTime<Utc>>,
     pub last_trade_at: Option<DateTime<Utc>>,
+    pub current_aum: Option<BigDecimal>,
+}
+
+/// Update behavioral signature for diversity tracking
+#[derive(Debug, Clone, AsChangeset)]
+#[diesel(table_name = crate::schema::deployed_strategies)]
+pub struct UpdateBehavioralSignature {
+    pub behavioral_signature: Option<serde_json::Value>,
+    pub parameter_hash: Option<i64>,
 }
