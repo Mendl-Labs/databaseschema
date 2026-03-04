@@ -99,7 +99,6 @@ impl std::fmt::Display for AuditAction {
 /// Schema has: action_type (not action), ip_address as Inet type
 #[derive(Debug, Clone, Queryable, Identifiable, Selectable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::audit_logs)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct AuditLog {
     pub id: Uuid,
     pub tenant_id: Uuid,

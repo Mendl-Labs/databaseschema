@@ -27,3 +27,11 @@ thiserror = "1.0"
 ultra-logger = { path = "../LoggingEngine/ultra-logger" }
 once_cell = "1.0"
 uuid = { version = "1.10.0", features = ["serde", "v4"] }
+aes-gcm = "0.10"
+base64 = "0.22"
+zeroize = { version = "1.8", features = ["derive"] }
+reqwest = { version = "0.11", features = ["json", "rustls-tls"], default-features = false, optional = true }
+
+[features]
+default = []
+azure-keyvault = ["reqwest"]
