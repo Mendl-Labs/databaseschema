@@ -1,3 +1,4 @@
+pub mod audit_log_ops;
 pub mod backtest_result_ops;
 pub mod candles_ops;
 pub mod exchange_ops;
@@ -11,5 +12,9 @@ pub mod sim_open_sell_order_ops;
 pub mod sim_trade_ops;
 pub mod strategy_ops;
 pub mod strategy_order_ops;
+pub mod tenant_ops;
+pub mod tenant_lifecycle;
+pub mod tenant_validator;
 pub mod trade_history_ops;
+pub mod usage_event_ops;
 pub mod wallet_balance_ops;

@@ -6,6 +6,7 @@ pub mod ops;
 pub mod schema;
 pub mod models;
 pub mod errors;
+pub mod encryption;
 
 use anyhow::Result;
 use diesel_async::AsyncPgConnection;

@@ -4,6 +4,7 @@ pub mod data_cache_status;
 pub mod exchange_credential;
 pub mod tenant;
 pub mod tenant_data_source;
+pub mod usage_event;
 pub mod user;
 pub mod user_preference;
 
@@ -37,6 +38,9 @@ pub use tenant::{NewTenant, NewTenantWithId, SubscriptionTier, Tenant, TenantUpd
 pub use tenant_data_source::{NewTenantDataSource, TenantDataSource, TenantDataSourceUpdate};
 pub use user::{NewUser, User, UserInfo, UserRole, UserUpdate};
 pub use user_preference::{NewUserPreference, UpdateUserPreference, UserPreference};
+
+// Usage & billing re-exports
+pub use usage_event::{NewUsageEvent, UsageDailyAggregate, UsageEvent, UsageMonthlySummary};
 
 // Live trading re-exports
 pub use pnl_snapshot::{DeploymentPnL, ExchangePnL, NewPnLSnapshot, PnLSnapshot};
