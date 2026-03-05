@@ -155,6 +155,91 @@ pub mod sql_types {
 }
 
 diesel::table! {
+    ai_conversations (id) {
+        id -> Uuid,
+        #[max_length = 255]
+        user_id -> Varchar,
+        tenant_id -> Nullable<Uuid>,
+        #[max_length = 50]
+        mode -> Varchar,
+        #[max_length = 500]
+        title -> Nullable<Varchar>,
+        strategy_id -> Nullable<Uuid>,
+        job_id -> Nullable<Uuid>,
+        message_count -> Int4,
+        total_tokens -> Int4,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    ai_feedback (id) {
+        id -> Uuid,
+        message_id -> Uuid,
+        conversation_id -> Uuid,
+        #[max_length = 255]
+        user_id -> Varchar,
+        rating -> Int4,
+        feedback_text -> Nullable<Text>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    ai_messages (id) {
+        id -> Uuid,
+        conversation_id -> Uuid,
+        #[max_length = 20]
+        role -> Varchar,
+        content -> Text,
+        actions_json -> Nullable<Jsonb>,
+        token_count -> Nullable<Int4>,
+        #[max_length = 50]
+        mode -> Nullable<Varchar>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    ai_strategy_provenance (id) {
+        id -> Uuid,
+        strategy_id -> Nullable<Uuid>,
+        conversation_id -> Uuid,
+        message_id -> Nullable<Uuid>,
+        #[max_length = 50]
+        generation_mode -> Varchar,
+        backtest_result_id -> Nullable<Uuid>,
+        backtest_sharpe -> Nullable<Numeric>,
+        backtest_pnl -> Nullable<Numeric>,
+        #[max_length = 20]
+        walk_forward_verdict -> Nullable<Varchar>,
+        feedback_score -> Nullable<Int4>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    ai_user_profiles (user_id) {
+        #[max_length = 255]
+        user_id -> Varchar,
+        tenant_id -> Nullable<Uuid>,
+        preferred_strategy_types -> Nullable<Jsonb>,
+        #[max_length = 50]
+        risk_tolerance -> Nullable<Varchar>,
+        preferred_execution_tier -> Nullable<Int4>,
+        common_parameters -> Nullable<Jsonb>,
+        style_notes -> Nullable<Text>,
+        avg_max_drawdown -> Nullable<Numeric>,
+        avg_sharpe -> Nullable<Numeric>,
+        total_backtests -> Nullable<Int4>,
+        total_ai_conversations -> Nullable<Int4>,
+        auto_derived_at -> Nullable<Timestamptz>,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     audit_logs (id) {
         id -> Uuid,
         tenant_id -> Uuid,
@@ -3583,6 +3668,17 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(ai_conversations -> tenants (tenant_id));
+diesel::joinable!(ai_conversations -> strategies (strategy_id));
+diesel::joinable!(ai_conversations -> backtest_jobs (job_id));
+diesel::joinable!(ai_feedback -> ai_messages (message_id));
+diesel::joinable!(ai_feedback -> ai_conversations (conversation_id));
+diesel::joinable!(ai_messages -> ai_conversations (conversation_id));
+diesel::joinable!(ai_strategy_provenance -> ai_conversations (conversation_id));
+diesel::joinable!(ai_strategy_provenance -> ai_messages (message_id));
+diesel::joinable!(ai_strategy_provenance -> strategies (strategy_id));
+diesel::joinable!(ai_strategy_provenance -> backtest_results (backtest_result_id));
+diesel::joinable!(ai_user_profiles -> tenants (tenant_id));
 diesel::joinable!(audit_logs -> tenants (tenant_id));
 diesel::joinable!(audit_logs -> users (user_id));
 diesel::joinable!(backtest_drawdown_periods -> backtest_results (backtest_result_id));
@@ -3719,6 +3815,11 @@ diesel::joinable!(webhook_deliveries -> webhook_endpoints (endpoint_id));
 diesel::joinable!(webhook_endpoints -> tenants (tenant_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    ai_conversations,
+    ai_feedback,
+    ai_messages,
+    ai_strategy_provenance,
+    ai_user_profiles,
     audit_logs,
     backtest_drawdown_periods,
     backtest_equity_curve,
