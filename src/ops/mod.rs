@@ -6,6 +6,7 @@ pub mod open_buy_order_ops;
 pub mod open_sell_order_ops;
 pub mod order_book_ops;
 pub mod pnl_snapshot_ops;
+pub mod kill_switch_event_ops;
 pub mod securities_ops;
 pub mod sim_open_buy_order_ops;
 pub mod sim_open_sell_order_ops;

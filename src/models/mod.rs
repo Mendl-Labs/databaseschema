@@ -18,6 +18,7 @@ pub mod user_preference;
 // Live trading models
 pub mod pnl_snapshot;
 pub mod trade_history;
+pub mod kill_switch_event;
 
 // Core models
 pub mod backtest_job;

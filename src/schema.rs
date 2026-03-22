@@ -3668,6 +3668,18 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    kill_switch_events (id) {
+        id -> Uuid,
+        tenant_id -> Uuid,
+        event_type -> Text,
+        reason -> Text,
+        triggered_at -> Timestamptz,
+        reset_at -> Nullable<Timestamptz>,
+        notes -> Nullable<Text>,
+    }
+}
+
 diesel::joinable!(ai_conversations -> tenants (tenant_id));
 diesel::joinable!(ai_conversations -> strategies (strategy_id));
 diesel::joinable!(ai_conversations -> backtest_jobs (job_id));
@@ -3887,6 +3899,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     ip_blocked_addresses,
     ip_known_range_subscriptions,
     ip_known_ranges,
+    kill_switch_events,
     l2_orderbook_snapshots,
     maintenance_components,
     maintenance_windows,
