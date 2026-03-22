@@ -68,6 +68,7 @@ pub struct BacktestResult {
     pub updated_at: DateTime<Utc>,
     pub strategy_instance_id: Option<Uuid>,
     pub tenant_id: Uuid,  // tenant_id is at the END in schema
+    pub python_source_code: Option<String>,
 }
 
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
@@ -130,6 +131,7 @@ pub struct NewBacktestResult {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub strategy_instance_id: Option<Uuid>,
+    pub python_source_code: Option<String>,
 }
 
 #[derive(Debug, Clone, Queryable, Identifiable, Serialize, Deserialize)]

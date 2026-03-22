@@ -41,6 +41,9 @@ pub struct DeployedStrategy {
     pub behavioral_signature: Option<serde_json::Value>,
     pub parameter_hash: Option<i64>,
     pub current_aum: Option<BigDecimal>,
+    // Deployment mode and risk
+    pub mode: String,
+    pub cooldown_minutes: Option<i32>,
 }
 
 /// New deployed strategy for insertion
@@ -61,6 +64,9 @@ pub struct NewDeployedStrategy {
     // Diversity preservation columns
     pub behavioral_signature: Option<serde_json::Value>,
     pub parameter_hash: Option<i64>,
+    // Deployment mode and risk
+    pub mode: Option<String>,
+    pub cooldown_minutes: Option<i32>,
 }
 
 /// Update deployed strategy
@@ -76,6 +82,8 @@ pub struct UpdateDeployedStrategy {
     pub max_drawdown_pct: Option<BigDecimal>,
     pub is_active: Option<bool>,
     pub metadata: Option<serde_json::Value>,
+    pub mode: Option<String>,
+    pub cooldown_minutes: Option<i32>,
 }
 
 /// Stop deployment changeset

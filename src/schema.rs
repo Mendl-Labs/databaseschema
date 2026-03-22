@@ -470,6 +470,7 @@ diesel::table! {
         updated_at -> Timestamptz,
         strategy_instance_id -> Nullable<Uuid>,
         tenant_id -> Uuid,
+        python_source_code -> Nullable<Text>,
     }
 }
 
@@ -1084,6 +1085,9 @@ diesel::table! {
         behavioral_signature -> Nullable<Jsonb>,
         parameter_hash -> Nullable<Int8>,
         current_aum -> Nullable<Numeric>,
+        #[max_length = 20]
+        mode -> Varchar,
+        cooldown_minutes -> Nullable<Int4>,
     }
 }
 
@@ -2070,6 +2074,9 @@ diesel::table! {
         quiet_hours_end -> Nullable<Time>,
         #[max_length = 50]
         timezone -> Nullable<Varchar>,
+        telegram_enabled -> Bool,
+        #[max_length = 100]
+        telegram_chat_id -> Nullable<Varchar>,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }
