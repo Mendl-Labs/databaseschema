@@ -1,0 +1,2 @@
+-- Extensions are shared across the database, don't drop them
+-- DROP EXTENSION IF EXISTS "uuid-ossp";
