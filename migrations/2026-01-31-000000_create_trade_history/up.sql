@@ -46,12 +46,14 @@ CREATE TABLE trade_history (
 
 -- Convert to TimescaleDB hypertable for efficient time-series queries (if available)
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         PERFORM create_hypertable('trade_history', 'executed_at', 
             chunk_time_interval => INTERVAL '1 day',
             if_not_exists => TRUE
         );
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 -- Indexes for common query patterns
@@ -62,7 +64,7 @@ CREATE INDEX idx_trade_history_exchange_order ON trade_history (exchange_order_i
 
 -- Enable compression for historical data (older than 7 days) - TimescaleDB only
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         EXECUTE 'ALTER TABLE trade_history SET (
             timescaledb.compress,
             timescaledb.compress_segmentby = ''tenant_id, deployment_id, exchange, symbol'',
@@ -71,7 +73,9 @@ DO $$ BEGIN
         PERFORM add_compression_policy('trade_history', INTERVAL '7 days', if_not_exists => TRUE);
         -- Retain 2 years of trade history
         PERFORM add_retention_policy('trade_history', INTERVAL '730 days', if_not_exists => TRUE);
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 -- Comments

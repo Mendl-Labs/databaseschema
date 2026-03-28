@@ -357,12 +357,14 @@ CREATE TABLE backup_audit_log (
 
 -- Convert to hypertable for time-series optimization
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         PERFORM create_hypertable('backup_audit_log', 'created_at', 
             chunk_time_interval => INTERVAL '1 month',
             if_not_exists => TRUE
         );
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 CREATE INDEX idx_backup_audit_tenant_time ON backup_audit_log(tenant_id, created_at DESC);
@@ -409,12 +411,14 @@ CREATE TABLE backup_storage_stats (
 
 -- Convert to hypertable
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         PERFORM create_hypertable('backup_storage_stats', 'recorded_at',
             chunk_time_interval => INTERVAL '1 month',
             if_not_exists => TRUE
         );
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 CREATE INDEX idx_backup_storage_stats_tenant ON backup_storage_stats(tenant_id, recorded_at DESC);

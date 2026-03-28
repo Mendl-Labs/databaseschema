@@ -2,9 +2,11 @@
 
 -- Drop retention policy (if TimescaleDB available)
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         PERFORM remove_retention_policy('ip_access_audit_log', if_exists => TRUE);
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 -- Drop functions

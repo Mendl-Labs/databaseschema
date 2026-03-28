@@ -225,11 +225,13 @@ GROUP BY so.id, so.strategy_name, so.strategy_instance_id, so.symbol, so.exchang
 
 -- Create TimescaleDB hypertable for high-performance time-series operations (if available)
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         PERFORM create_hypertable('strategy_orders', 'order_created_at', chunk_time_interval => interval '1 day');
         PERFORM create_hypertable('strategy_order_fills', 'fill_timestamp', chunk_time_interval => interval '1 hour');
         PERFORM create_hypertable('strategy_order_state_changes', 'changed_at', chunk_time_interval => interval '1 hour');
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 -- Add primary keys after hypertable creation (must include partitioning column)
@@ -239,7 +241,7 @@ ALTER TABLE strategy_order_state_changes ADD CONSTRAINT strategy_order_state_cha
 
 -- Compression and retention policies (TimescaleDB only)
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         EXECUTE 'ALTER TABLE strategy_orders SET (
             timescaledb.compress,
             timescaledb.compress_segmentby = ''strategy_name, symbol, exchange, status'',
@@ -262,7 +264,9 @@ DO $$ BEGIN
         PERFORM add_retention_policy('strategy_orders', INTERVAL '7 years');
         PERFORM add_retention_policy('strategy_order_fills', INTERVAL '7 years');
         PERFORM add_retention_policy('strategy_order_state_changes', INTERVAL '2 years');
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 -- Performance indexes

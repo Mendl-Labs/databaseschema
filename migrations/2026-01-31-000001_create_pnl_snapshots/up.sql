@@ -43,12 +43,14 @@ CREATE TABLE pnl_snapshots (
 
 -- Convert to TimescaleDB hypertable (if available)
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         PERFORM create_hypertable('pnl_snapshots', 'snapshot_at', 
             chunk_time_interval => INTERVAL '1 day',
             if_not_exists => TRUE
         );
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 -- Indexes for common query patterns
@@ -56,7 +58,7 @@ CREATE INDEX idx_pnl_snapshots_tenant_time ON pnl_snapshots (tenant_id, snapshot
 
 -- Enable compression, retention, and continuous aggregate (TimescaleDB only)
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         EXECUTE 'ALTER TABLE pnl_snapshots SET (
             timescaledb.compress,
             timescaledb.compress_segmentby = ''tenant_id'',
@@ -89,7 +91,9 @@ DO $$ BEGIN
             schedule_interval => INTERVAL '1 hour',
             if_not_exists => TRUE
         );
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 -- Comments

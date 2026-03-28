@@ -317,12 +317,14 @@ CREATE TABLE IF NOT EXISTS domain_audit_log (
 
 -- Convert to TimescaleDB hypertable (if available)
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         PERFORM create_hypertable('domain_audit_log', 'event_time', 
             chunk_time_interval => INTERVAL '1 week',
             if_not_exists => TRUE
         );
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_domain_audit_tenant_time ON domain_audit_log(tenant_id, event_time DESC);
@@ -370,12 +372,14 @@ CREATE TABLE IF NOT EXISTS domain_traffic_stats (
 
 -- Convert to TimescaleDB hypertable with 1-hour buckets (if available)
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         PERFORM create_hypertable('domain_traffic_stats', 'bucket_time', 
             chunk_time_interval => INTERVAL '1 day',
             if_not_exists => TRUE
         );
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_domain_traffic_tenant ON domain_traffic_stats(tenant_id, bucket_time DESC);

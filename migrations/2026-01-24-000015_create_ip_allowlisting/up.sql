@@ -275,12 +275,14 @@ CREATE TABLE ip_access_audit_log (
 
 -- Convert to hypertable (if TimescaleDB available)
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         PERFORM create_hypertable('ip_access_audit_log', 'event_time', 
             chunk_time_interval => INTERVAL '1 day',
             if_not_exists => TRUE
         );
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 CREATE INDEX idx_ip_audit_tenant_time ON ip_access_audit_log(tenant_id, event_time DESC);
@@ -484,9 +486,11 @@ $$ LANGUAGE plpgsql;
 
 -- Retention policy for audit logs (if TimescaleDB available)
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         PERFORM add_retention_policy('ip_access_audit_log', INTERVAL '90 days', if_not_exists => TRUE);
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 -- ============================================================================

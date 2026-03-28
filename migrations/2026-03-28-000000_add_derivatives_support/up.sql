@@ -57,7 +57,9 @@ BEGIN
             -- Constraint already exists.
             NULL;
         END;
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_strategy_orders_derivative_instrument_id
@@ -88,14 +90,16 @@ CREATE TABLE IF NOT EXISTS option_greeks_snapshots (
 );
 
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         PERFORM create_hypertable(
             'option_greeks_snapshots',
             'snapshot_time',
             if_not_exists => TRUE,
             chunk_time_interval => interval '1 day'
         );
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_option_greeks_symbol_time
@@ -104,7 +108,7 @@ CREATE INDEX IF NOT EXISTS idx_option_greeks_exchange_time
     ON option_greeks_snapshots (exchange, snapshot_time DESC);
 
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         EXECUTE 'ALTER TABLE option_greeks_snapshots SET (
             timescaledb.compress,
             timescaledb.compress_segmentby = ''symbol, exchange'',
@@ -112,5 +116,7 @@ DO $$ BEGIN
         )';
         PERFORM add_compression_policy('option_greeks_snapshots', INTERVAL '7 days', if_not_exists => TRUE);
         PERFORM add_retention_policy('option_greeks_snapshots', INTERVAL '2 years', if_not_exists => TRUE);
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
