@@ -11,7 +11,6 @@ UPDATE backtest_jobs
 SET current_phase = CASE 
     WHEN status = 'completed' THEN 'completed'
     WHEN status = 'failed' THEN 'failed'
-    WHEN status = 'running' AND optimization_method = 'genetic' THEN 'genetic_optimization'
     WHEN status = 'running' THEN 'backtesting'
     ELSE 'initializing'
 END;
