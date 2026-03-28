@@ -143,15 +143,10 @@ jobs:
     - name: Update OpsWatch DB credentials
       run: |
         CREDS_FILE="/opt/bridges/.db-credentials.env"
-        cat > "$CREDS_FILE" <<EOF
-        PGHOST=${POSTGRES_HOST}
-        PGPORT=${POSTGRES_PORT}
-        PGUSER=${POSTGRES_USER}
-        PGPASSWORD=${POSTGRES_PASSWORD}
-        PGDATABASE=${POSTGRES_DB}
-        EOF
-        sed -i 's/^[[:space:]]*//' "$CREDS_FILE"
-        chmod 600 "$CREDS_FILE"
+        printf 'PGHOST=%s\nPGPORT=%s\nPGUSER=%s\nPGPASSWORD=%s\nPGDATABASE=%s\n' \
+          "$POSTGRES_HOST" "$POSTGRES_PORT" "$POSTGRES_USER" "$POSTGRES_PASSWORD" "$POSTGRES_DB" \
+          > "$CREDS_FILE"
+        chmod 640 "$CREDS_FILE"
         echo "[OK] OpsWatch DB credentials updated"
 
     - name: Migration Summary
