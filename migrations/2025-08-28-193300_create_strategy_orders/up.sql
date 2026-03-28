@@ -223,43 +223,47 @@ GROUP BY so.id, so.strategy_name, so.strategy_instance_id, so.symbol, so.exchang
          so.market_impact_bps, so.order_submitted_at, so.order_created_at, so.first_fill_at, 
          so.completed_at, so.signal_timestamp;
 
--- Create TimescaleDB hypertable for high-performance time-series operations
-SELECT create_hypertable('strategy_orders', 'order_created_at', chunk_time_interval => interval '1 day');
-SELECT create_hypertable('strategy_order_fills', 'fill_timestamp', chunk_time_interval => interval '1 hour');
-SELECT create_hypertable('strategy_order_state_changes', 'changed_at', chunk_time_interval => interval '1 hour');
+-- Create TimescaleDB hypertable for high-performance time-series operations (if available)
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM create_hypertable('strategy_orders', 'order_created_at', chunk_time_interval => interval '1 day');
+        PERFORM create_hypertable('strategy_order_fills', 'fill_timestamp', chunk_time_interval => interval '1 hour');
+        PERFORM create_hypertable('strategy_order_state_changes', 'changed_at', chunk_time_interval => interval '1 hour');
+    END IF;
+END $$;
 
 -- Add primary keys after hypertable creation (must include partitioning column)
 ALTER TABLE strategy_orders ADD CONSTRAINT strategy_orders_pkey PRIMARY KEY (id, order_created_at);
 ALTER TABLE strategy_order_fills ADD CONSTRAINT strategy_order_fills_pkey PRIMARY KEY (id, fill_timestamp);
 ALTER TABLE strategy_order_state_changes ADD CONSTRAINT strategy_order_state_changes_pkey PRIMARY KEY (id, changed_at);
 
--- Compression and retention policies
-ALTER TABLE strategy_orders SET (
-    timescaledb.compress,
-    timescaledb.compress_segmentby = 'strategy_name, symbol, exchange, status',
-    timescaledb.compress_orderby = 'order_created_at DESC'
-);
-
-ALTER TABLE strategy_order_fills SET (
-    timescaledb.compress,
-    timescaledb.compress_segmentby = 'order_id',
-    timescaledb.compress_orderby = 'fill_timestamp DESC'
-);
-
-ALTER TABLE strategy_order_state_changes SET (
-    timescaledb.compress,
-    timescaledb.compress_segmentby = 'order_id',
-    timescaledb.compress_orderby = 'changed_at DESC'
-);
-
-SELECT add_compression_policy('strategy_orders', INTERVAL '7 days');
-SELECT add_compression_policy('strategy_order_fills', INTERVAL '1 day');
-SELECT add_compression_policy('strategy_order_state_changes', INTERVAL '1 day');
-
--- Retention policies (keep data for compliance)
-SELECT add_retention_policy('strategy_orders', INTERVAL '7 years');
-SELECT add_retention_policy('strategy_order_fills', INTERVAL '7 years');
-SELECT add_retention_policy('strategy_order_state_changes', INTERVAL '2 years');
+-- Compression and retention policies (TimescaleDB only)
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        EXECUTE 'ALTER TABLE strategy_orders SET (
+            timescaledb.compress,
+            timescaledb.compress_segmentby = ''strategy_name, symbol, exchange, status'',
+            timescaledb.compress_orderby = ''order_created_at DESC''
+        )';
+        EXECUTE 'ALTER TABLE strategy_order_fills SET (
+            timescaledb.compress,
+            timescaledb.compress_segmentby = ''order_id'',
+            timescaledb.compress_orderby = ''fill_timestamp DESC''
+        )';
+        EXECUTE 'ALTER TABLE strategy_order_state_changes SET (
+            timescaledb.compress,
+            timescaledb.compress_segmentby = ''order_id'',
+            timescaledb.compress_orderby = ''changed_at DESC''
+        )';
+        PERFORM add_compression_policy('strategy_orders', INTERVAL '7 days');
+        PERFORM add_compression_policy('strategy_order_fills', INTERVAL '1 day');
+        PERFORM add_compression_policy('strategy_order_state_changes', INTERVAL '1 day');
+        -- Retention policies (keep data for compliance)
+        PERFORM add_retention_policy('strategy_orders', INTERVAL '7 years');
+        PERFORM add_retention_policy('strategy_order_fills', INTERVAL '7 years');
+        PERFORM add_retention_policy('strategy_order_state_changes', INTERVAL '2 years');
+    END IF;
+END $$;
 
 -- Performance indexes
 CREATE INDEX idx_strategy_orders_signal_id ON strategy_orders (signal_id);

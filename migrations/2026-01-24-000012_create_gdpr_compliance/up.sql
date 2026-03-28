@@ -116,10 +116,14 @@ CREATE TABLE consent_history (
 );
 
 -- Convert to hypertable
-SELECT create_hypertable('consent_history', 'created_at',
-    chunk_time_interval => INTERVAL '1 month',
-    if_not_exists => TRUE
-);
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM create_hypertable('consent_history', 'created_at',
+            chunk_time_interval => INTERVAL '1 month',
+            if_not_exists => TRUE
+        );
+    END IF;
+END $$;
 
 CREATE INDEX idx_consent_history_tenant_user ON consent_history(tenant_id, user_id, created_at DESC);
 CREATE INDEX idx_consent_history_record ON consent_history(consent_record_id, created_at DESC);
@@ -512,10 +516,14 @@ CREATE TABLE gdpr_audit_log (
 );
 
 -- Convert to hypertable
-SELECT create_hypertable('gdpr_audit_log', 'created_at',
-    chunk_time_interval => INTERVAL '1 month',
-    if_not_exists => TRUE
-);
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM create_hypertable('gdpr_audit_log', 'created_at',
+            chunk_time_interval => INTERVAL '1 month',
+            if_not_exists => TRUE
+        );
+    END IF;
+END $$;
 
 CREATE INDEX idx_gdpr_audit_tenant ON gdpr_audit_log(tenant_id, created_at DESC);
 CREATE INDEX idx_gdpr_audit_user ON gdpr_audit_log(tenant_id, user_id, created_at DESC);

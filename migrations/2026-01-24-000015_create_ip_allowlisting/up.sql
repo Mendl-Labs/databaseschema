@@ -273,11 +273,15 @@ CREATE TABLE ip_access_audit_log (
     PRIMARY KEY (id, event_time)
 );
 
--- Convert to hypertable
-SELECT create_hypertable('ip_access_audit_log', 'event_time', 
-    chunk_time_interval => INTERVAL '1 day',
-    if_not_exists => TRUE
-);
+-- Convert to hypertable (if TimescaleDB available)
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM create_hypertable('ip_access_audit_log', 'event_time', 
+            chunk_time_interval => INTERVAL '1 day',
+            if_not_exists => TRUE
+        );
+    END IF;
+END $$;
 
 CREATE INDEX idx_ip_audit_tenant_time ON ip_access_audit_log(tenant_id, event_time DESC);
 CREATE INDEX idx_ip_audit_ip ON ip_access_audit_log(ip_address, event_time DESC);
@@ -478,8 +482,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Retention policy for audit logs
-SELECT add_retention_policy('ip_access_audit_log', INTERVAL '90 days', if_not_exists => TRUE);
+-- Retention policy for audit logs (if TimescaleDB available)
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM add_retention_policy('ip_access_audit_log', INTERVAL '90 days', if_not_exists => TRUE);
+    END IF;
+END $$;
 
 -- ============================================================================
 -- SEED DATA - Known IP Ranges

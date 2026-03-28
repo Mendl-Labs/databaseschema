@@ -23,19 +23,9 @@ pub mod kill_switch_event;
 // Core models
 pub mod backtest_job;
 pub mod backtest_result;
-pub mod candles;
 pub mod deployed_strategy;
-pub mod exchange;
-pub mod open_buy_order;
-pub mod open_sell_order;
-pub mod order_book;
-pub mod security;
-pub mod sim_open_buy_order;
-pub mod sim_open_sell_order;
-pub mod sim_trade;
 pub mod strategy;
 pub mod strategy_order;
-pub mod wallet_balance;
 
 // Re-export commonly used types
 // AI Learning System re-exports

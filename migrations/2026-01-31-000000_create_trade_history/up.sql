@@ -44,11 +44,15 @@ CREATE TABLE trade_history (
     PRIMARY KEY (executed_at, id)
 );
 
--- Convert to TimescaleDB hypertable for efficient time-series queries
-SELECT create_hypertable('trade_history', 'executed_at', 
-    chunk_time_interval => INTERVAL '1 day',
-    if_not_exists => TRUE
-);
+-- Convert to TimescaleDB hypertable for efficient time-series queries (if available)
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM create_hypertable('trade_history', 'executed_at', 
+            chunk_time_interval => INTERVAL '1 day',
+            if_not_exists => TRUE
+        );
+    END IF;
+END $$;
 
 -- Indexes for common query patterns
 CREATE INDEX idx_trade_history_tenant ON trade_history (tenant_id, executed_at DESC);
@@ -56,17 +60,19 @@ CREATE INDEX idx_trade_history_deployment ON trade_history (deployment_id, execu
 CREATE INDEX idx_trade_history_exchange_symbol ON trade_history (exchange, symbol, executed_at DESC);
 CREATE INDEX idx_trade_history_exchange_order ON trade_history (exchange_order_id) WHERE exchange_order_id IS NOT NULL;
 
--- Enable compression for historical data (older than 7 days)
-ALTER TABLE trade_history SET (
-    timescaledb.compress,
-    timescaledb.compress_segmentby = 'tenant_id, deployment_id, exchange, symbol',
-    timescaledb.compress_orderby = 'executed_at DESC'
-);
-
-SELECT add_compression_policy('trade_history', INTERVAL '7 days', if_not_exists => TRUE);
-
--- Retain 2 years of trade history
-SELECT add_retention_policy('trade_history', INTERVAL '730 days', if_not_exists => TRUE);
+-- Enable compression for historical data (older than 7 days) - TimescaleDB only
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        EXECUTE 'ALTER TABLE trade_history SET (
+            timescaledb.compress,
+            timescaledb.compress_segmentby = ''tenant_id, deployment_id, exchange, symbol'',
+            timescaledb.compress_orderby = ''executed_at DESC''
+        )';
+        PERFORM add_compression_policy('trade_history', INTERVAL '7 days', if_not_exists => TRUE);
+        -- Retain 2 years of trade history
+        PERFORM add_retention_policy('trade_history', INTERVAL '730 days', if_not_exists => TRUE);
+    END IF;
+END $$;
 
 -- Comments
 COMMENT ON TABLE trade_history IS 'Historical record of all executed trades from live trading deployments';

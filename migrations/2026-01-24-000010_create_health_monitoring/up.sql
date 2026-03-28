@@ -121,10 +121,14 @@ CREATE TABLE IF NOT EXISTS health_check_results (
 );
 
 -- Convert to hypertable for time-series optimization
-SELECT create_hypertable('health_check_results', 'created_at', 
-    chunk_time_interval => INTERVAL '1 day',
-    if_not_exists => TRUE
-);
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM create_hypertable('health_check_results', 'created_at', 
+            chunk_time_interval => INTERVAL '1 day',
+            if_not_exists => TRUE
+        );
+    END IF;
+END $$;
 
 -- ============================================================================
 -- SERVICE STATUS
@@ -207,10 +211,14 @@ CREATE TABLE IF NOT EXISTS uptime_records (
 );
 
 -- Convert to hypertable
-SELECT create_hypertable('uptime_records', 'period_start',
-    chunk_time_interval => INTERVAL '1 month',
-    if_not_exists => TRUE
-);
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM create_hypertable('uptime_records', 'period_start',
+            chunk_time_interval => INTERVAL '1 month',
+            if_not_exists => TRUE
+        );
+    END IF;
+END $$;
 
 -- ============================================================================
 -- INCIDENTS
