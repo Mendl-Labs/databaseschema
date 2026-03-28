@@ -41,12 +41,14 @@ CREATE TABLE usage_events (
 
 -- Convert to hypertable for time-series optimization (TimescaleDB)
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         PERFORM create_hypertable('usage_events', 'created_at', 
             chunk_time_interval => INTERVAL '1 day',
             if_not_exists => TRUE
         );
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 -- Indexes for common queries

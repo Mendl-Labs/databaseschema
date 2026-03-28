@@ -1,9 +1,11 @@
 -- Remove compression and retention policies first (if TimescaleDB available)
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         PERFORM remove_compression_policy('trade_history', if_exists => TRUE);
         PERFORM remove_retention_policy('trade_history', if_exists => TRUE);
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 -- Drop the table

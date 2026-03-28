@@ -117,12 +117,14 @@ CREATE TABLE consent_history (
 
 -- Convert to hypertable
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         PERFORM create_hypertable('consent_history', 'created_at',
             chunk_time_interval => INTERVAL '1 month',
             if_not_exists => TRUE
         );
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 CREATE INDEX idx_consent_history_tenant_user ON consent_history(tenant_id, user_id, created_at DESC);
@@ -517,12 +519,14 @@ CREATE TABLE gdpr_audit_log (
 
 -- Convert to hypertable
 DO $$ BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    BEGIN -- TimescaleDB (graceful skip if unavailable)
         PERFORM create_hypertable('gdpr_audit_log', 'created_at',
             chunk_time_interval => INTERVAL '1 month',
             if_not_exists => TRUE
         );
-    END IF;
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
+    END;
 END $$;
 
 CREATE INDEX idx_gdpr_audit_tenant ON gdpr_audit_log(tenant_id, created_at DESC);
