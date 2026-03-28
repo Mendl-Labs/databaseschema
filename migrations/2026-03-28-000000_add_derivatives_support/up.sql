@@ -57,9 +57,7 @@ BEGIN
             -- Constraint already exists.
             NULL;
         END;
-    EXCEPTION WHEN OTHERS THEN
-        RAISE NOTICE 'TimescaleDB feature not available, skipping: %', SQLERRM;
-    END;
+    END IF;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_strategy_orders_derivative_instrument_id
