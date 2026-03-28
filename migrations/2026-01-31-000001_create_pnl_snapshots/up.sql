@@ -100,4 +100,3 @@ END $$;
 COMMENT ON TABLE pnl_snapshots IS 'Periodic P&L snapshots (every 5 minutes) for dashboard charts';
 COMMENT ON COLUMN pnl_snapshots.by_exchange IS 'JSON breakdown of P&L by exchange for chart filtering';
 COMMENT ON COLUMN pnl_snapshots.by_deployment IS 'JSON breakdown by deployment with P&L and trade counts';
-COMMENT ON VIEW pnl_hourly IS 'Hourly rollup of P&L data for efficient long-range queries';
