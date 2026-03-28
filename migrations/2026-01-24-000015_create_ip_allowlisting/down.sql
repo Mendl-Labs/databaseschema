@@ -1,7 +1,11 @@
 -- Rollback IP Allowlisting Migration
 
--- Drop retention policy
-SELECT remove_retention_policy('ip_access_audit_log', if_exists => TRUE);
+-- Drop retention policy (if TimescaleDB available)
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM remove_retention_policy('ip_access_audit_log', if_exists => TRUE);
+    END IF;
+END $$;
 
 -- Drop functions
 DROP FUNCTION IF EXISTS get_ip_access_summary(UUID, INTEGER);

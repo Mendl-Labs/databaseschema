@@ -732,26 +732,6 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    candles (timestamp, symbol, timeframe) {
-        timestamp -> Timestamptz,
-        #[max_length = 20]
-        symbol -> Varchar,
-        #[max_length = 50]
-        exchange -> Varchar,
-        security_id -> Uuid,
-        exchange_id -> Uuid,
-        open_price -> Numeric,
-        high_price -> Numeric,
-        low_price -> Numeric,
-        close_price -> Numeric,
-        volume -> Numeric,
-        trade_count -> Int4,
-        #[max_length = 10]
-        timeframe -> Varchar,
-        created_at -> Timestamptz,
-    }
-}
 
 diesel::table! {
     canned_responses (id) {
@@ -1476,14 +1456,6 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    exchanges (exchange_id) {
-        created_at -> Timestamptz,
-        exchange_id -> Uuid,
-        #[max_length = 8]
-        exchange -> Varchar,
-    }
-}
 
 diesel::table! {
     export_jobs (id) {
@@ -1726,42 +1698,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    historical_orders (timestamp, event_id) {
-        event_id -> Uuid,
-        timestamp -> Timestamptz,
-        order_id -> Text,
-        event_type -> Text,
-        side -> Text,
-        price_level -> Numeric,
-        quantity -> Numeric,
-        prev_price -> Nullable<Numeric>,
-        prev_quantity -> Nullable<Numeric>,
-        status -> Text,
-        exchange -> Text,
-        symbol -> Text,
-        exchange_id -> Uuid,
-        security_id -> Uuid,
-        tenant_id -> Nullable<Uuid>,
-    }
-}
 
-diesel::table! {
-    historical_snapshot (timestamp, event_id) {
-        event_id -> Uuid,
-        timestamp -> Timestamptz,
-        order_id -> Text,
-        event_type -> Text,
-        side -> Text,
-        price_level -> Numeric,
-        quantity -> Numeric,
-        status -> Text,
-        exchange -> Text,
-        symbol -> Text,
-        exchange_id -> Uuid,
-        security_id -> Uuid,
-    }
-}
 
 diesel::table! {
     use diesel::sql_types::*;
@@ -1998,27 +1935,6 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    l2_orderbook_snapshots (timestamp, symbol, exchange) {
-        timestamp -> Timestamptz,
-        #[max_length = 10]
-        symbol -> Varchar,
-        #[max_length = 30]
-        exchange -> Varchar,
-        security_id -> Uuid,
-        exchange_id -> Uuid,
-        bid_prices -> Array<Nullable<Numeric>>,
-        bid_quantities -> Array<Nullable<Numeric>>,
-        ask_prices -> Array<Nullable<Numeric>>,
-        ask_quantities -> Array<Nullable<Numeric>>,
-        best_bid_price -> Nullable<Numeric>,
-        best_bid_quantity -> Nullable<Numeric>,
-        best_ask_price -> Nullable<Numeric>,
-        best_ask_quantity -> Nullable<Numeric>,
-        spread_bps -> Nullable<Numeric>,
-        created_at -> Timestamptz,
-    }
-}
 
 diesel::table! {
     maintenance_components (id) {
@@ -2082,39 +1998,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    open_buy_orders (created_at, unique_id) {
-        created_at -> Timestamptz,
-        #[max_length = 7]
-        symbol -> Varchar,
-        #[max_length = 8]
-        exchange -> Varchar,
-        security_id -> Uuid,
-        exchange_id -> Uuid,
-        buy_order_book_id -> Uuid,
-        #[max_length = 255]
-        unique_id -> Varchar,
-        price_level -> Numeric,
-        buy_quantity -> Numeric,
-    }
-}
 
-diesel::table! {
-    open_sell_orders (created_at, unique_id) {
-        created_at -> Timestamptz,
-        #[max_length = 7]
-        symbol -> Varchar,
-        #[max_length = 8]
-        exchange -> Varchar,
-        security_id -> Uuid,
-        exchange_id -> Uuid,
-        sell_order_book_id -> Uuid,
-        #[max_length = 255]
-        unique_id -> Varchar,
-        price_level -> Numeric,
-        sell_quantity -> Numeric,
-    }
-}
 
 diesel::table! {
     optimization_iterations (id) {
@@ -2162,22 +2046,6 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    order_books (order_book_id) {
-        created_at -> Timestamptz,
-        updated_at -> Nullable<Timestamptz>,
-        #[max_length = 7]
-        symbol -> Varchar,
-        #[max_length = 8]
-        exchange -> Varchar,
-        security_id -> Uuid,
-        exchange_id -> Uuid,
-        order_book_id -> Uuid,
-        buy_order_book_id -> Uuid,
-        sell_order_book_id -> Uuid,
-        total_volume -> Numeric,
-    }
-}
 
 diesel::table! {
     pitr_checkpoints (id) {
@@ -2474,14 +2342,6 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    securities (security_id) {
-        created_at -> Timestamptz,
-        security_id -> Uuid,
-        #[max_length = 7]
-        symbol -> Varchar,
-    }
-}
 
 diesel::table! {
     use diesel::sql_types::*;
@@ -2512,54 +2372,8 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    sim_open_buy_orders (created_at, backtest_id, unique_id) {
-        backtest_id -> Uuid,
-        created_at -> Timestamptz,
-        #[max_length = 7]
-        symbol -> Varchar,
-        #[max_length = 8]
-        exchange -> Varchar,
-        #[max_length = 255]
-        unique_id -> Varchar,
-        price_level -> Numeric,
-        buy_quantity -> Numeric,
-        created_id -> Nullable<Uuid>,
-    }
-}
 
-diesel::table! {
-    sim_open_sell_orders (created_at, unique_id) {
-        backtest_id -> Uuid,
-        created_at -> Timestamptz,
-        #[max_length = 7]
-        symbol -> Varchar,
-        #[max_length = 8]
-        exchange -> Varchar,
-        #[max_length = 255]
-        unique_id -> Varchar,
-        price_level -> Numeric,
-        sell_quantity -> Numeric,
-        created_id -> Nullable<Uuid>,
-    }
-}
 
-diesel::table! {
-    sim_trades (created_at, backtest_id, trade_id) {
-        backtest_id -> Uuid,
-        created_at -> Timestamptz,
-        #[max_length = 7]
-        symbol -> Varchar,
-        #[max_length = 8]
-        exchange -> Varchar,
-        trade_id -> Text,
-        #[max_length = 4]
-        side -> Varchar,
-        price -> Numeric,
-        quantity -> Numeric,
-        matched_trader -> Bool,
-    }
-}
 
 diesel::table! {
     source_maps (id) {
@@ -3342,23 +3156,6 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    trades (created_at, trade_id) {
-        created_at -> Timestamptz,
-        #[max_length = 7]
-        symbol -> Varchar,
-        #[max_length = 8]
-        exchange -> Varchar,
-        #[max_length = 255]
-        trade_id -> Varchar,
-        security_id -> Uuid,
-        exchange_id -> Uuid,
-        #[max_length = 4]
-        side -> Varchar,
-        price -> Numeric,
-        quantity -> Numeric,
-    }
-}
 
 diesel::table! {
     uptime_records (id, period_start) {
@@ -3549,38 +3346,6 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    wallet_balances (id, timestamp) {
-        id -> Uuid,
-        #[max_length = 50]
-        exchange -> Varchar,
-        #[max_length = 255]
-        user_id -> Varchar,
-        #[max_length = 50]
-        asset -> Varchar,
-        #[max_length = 50]
-        asset_class -> Varchar,
-        #[max_length = 50]
-        wallet_type -> Varchar,
-        #[max_length = 255]
-        wallet_id -> Varchar,
-        balance -> Numeric,
-        available_balance -> Nullable<Numeric>,
-        held_balance -> Nullable<Numeric>,
-        #[max_length = 255]
-        ledger_id -> Nullable<Varchar>,
-        #[max_length = 255]
-        ref_id -> Nullable<Varchar>,
-        #[max_length = 50]
-        transaction_type -> Nullable<Varchar>,
-        amount -> Nullable<Numeric>,
-        fee -> Nullable<Numeric>,
-        sequence -> Nullable<Int8>,
-        timestamp -> Timestamptz,
-        created_at -> Timestamptz,
-        updated_at -> Timestamptz,
-    }
-}
 
 diesel::table! {
     webhook_deliveries (id) {
@@ -3718,8 +3483,6 @@ diesel::joinable!(backups -> backup_configurations (configuration_id));
 diesel::joinable!(backups -> backup_schedules (schedule_id));
 diesel::joinable!(backups -> tenants (tenant_id));
 diesel::joinable!(branding_assets -> tenants (tenant_id));
-diesel::joinable!(candles -> exchanges (exchange_id));
-diesel::joinable!(candles -> securities (security_id));
 diesel::joinable!(canned_responses -> tenants (tenant_id));
 diesel::joinable!(canned_responses -> ticket_categories (category_id));
 diesel::joinable!(component_status_history -> scheduled_maintenance (caused_by_maintenance_id));
@@ -3760,23 +3523,16 @@ diesel::joinable!(health_checks -> tenants (tenant_id));
 diesel::joinable!(health_incidents -> health_checks (health_check_id));
 diesel::joinable!(health_incidents -> service_status (service_id));
 diesel::joinable!(health_incidents -> tenants (tenant_id));
-diesel::joinable!(historical_orders -> exchanges (exchange_id));
-diesel::joinable!(historical_orders -> securities (security_id));
-diesel::joinable!(historical_snapshot -> exchanges (exchange_id));
-diesel::joinable!(historical_snapshot -> securities (security_id));
 diesel::joinable!(incident_components -> status_components (component_id));
 diesel::joinable!(incident_components -> status_incidents (incident_id));
 diesel::joinable!(incident_updates -> status_incidents (incident_id));
 diesel::joinable!(ip_known_range_subscriptions -> ip_known_ranges (known_range_id));
-diesel::joinable!(l2_orderbook_snapshots -> exchanges (exchange_id));
-diesel::joinable!(l2_orderbook_snapshots -> securities (security_id));
 diesel::joinable!(maintenance_components -> scheduled_maintenance (maintenance_id));
 diesel::joinable!(maintenance_components -> status_components (component_id));
 diesel::joinable!(maintenance_windows -> tenants (tenant_id));
 diesel::joinable!(notification_preferences -> tenants (tenant_id));
 diesel::joinable!(optimization_iterations -> optimization_runs (optimization_run_id));
 diesel::joinable!(optimization_runs -> strategies (strategy_id));
-diesel::joinable!(order_books -> exchanges (exchange_id));
 diesel::joinable!(pitr_checkpoints -> backups (backup_id));
 diesel::joinable!(pitr_checkpoints -> tenants (tenant_id));
 diesel::joinable!(privacy_settings -> tenants (tenant_id));
@@ -3821,7 +3577,6 @@ diesel::joinable!(ticket_categories -> tenants (tenant_id));
 diesel::joinable!(ticket_messages -> support_tickets (ticket_id));
 diesel::joinable!(ticket_sla_policies -> tenants (tenant_id));
 diesel::joinable!(ticket_watchers -> support_tickets (ticket_id));
-diesel::joinable!(trades -> exchanges (exchange_id));
 diesel::joinable!(usage_daily_aggregates -> tenants (tenant_id));
 diesel::joinable!(usage_monthly_summary -> tenants (tenant_id));
 diesel::joinable!(user_data_inventory -> consent_records (consent_record_id));
@@ -3856,7 +3611,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     backups,
     branding_assets,
     branding_presets,
-    candles,
     canned_responses,
     component_status_history,
     component_uptime_daily,
@@ -3883,7 +3637,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     error_occurrences,
     error_stats_hourly,
     exchange_credentials,
-    exchanges,
     export_jobs,
     export_quotas,
     export_stats,
@@ -3894,8 +3647,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     health_check_results,
     health_checks,
     health_incidents,
-    historical_orders,
-    historical_snapshot,
     identity_providers,
     incident_components,
     incident_updates,
@@ -3907,15 +3658,11 @@ diesel::allow_tables_to_appear_in_same_query!(
     ip_known_range_subscriptions,
     ip_known_ranges,
     kill_switch_events,
-    l2_orderbook_snapshots,
     maintenance_components,
     maintenance_windows,
     notification_preferences,
-    open_buy_orders,
-    open_sell_orders,
     optimization_iterations,
     optimization_runs,
-    order_books,
     pitr_checkpoints,
     pnl_snapshots,
     privacy_settings,
@@ -3926,11 +3673,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     saml_group_mappings,
     saml_request_cache,
     scheduled_maintenance,
-    securities,
     service_status,
-    sim_open_buy_orders,
-    sim_open_sell_orders,
-    sim_trades,
     source_maps,
     sso_audit_log,
     sso_domains,
@@ -3960,7 +3703,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     ticket_sla_policies,
     ticket_watchers,
     trade_history,
-    trades,
     uptime_records,
     usage_daily_aggregates,
     usage_events,
@@ -3968,7 +3710,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     user_data_inventory,
     user_preferences,
     users,
-    wallet_balances,
     webhook_deliveries,
     webhook_endpoints,
 );

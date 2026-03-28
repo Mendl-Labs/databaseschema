@@ -41,51 +41,56 @@ CREATE TABLE pnl_snapshots (
     PRIMARY KEY (snapshot_at, tenant_id)
 );
 
--- Convert to TimescaleDB hypertable
-SELECT create_hypertable('pnl_snapshots', 'snapshot_at', 
-    chunk_time_interval => INTERVAL '1 day',
-    if_not_exists => TRUE
-);
+-- Convert to TimescaleDB hypertable (if available)
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM create_hypertable('pnl_snapshots', 'snapshot_at', 
+            chunk_time_interval => INTERVAL '1 day',
+            if_not_exists => TRUE
+        );
+    END IF;
+END $$;
 
 -- Indexes for common query patterns
 CREATE INDEX idx_pnl_snapshots_tenant_time ON pnl_snapshots (tenant_id, snapshot_at DESC);
 
--- Enable compression for data older than 7 days
-ALTER TABLE pnl_snapshots SET (
-    timescaledb.compress,
-    timescaledb.compress_segmentby = 'tenant_id',
-    timescaledb.compress_orderby = 'snapshot_at DESC'
-);
-
-SELECT add_compression_policy('pnl_snapshots', INTERVAL '7 days', if_not_exists => TRUE);
-
--- Retain 1 year of snapshots (5-min intervals = ~105K rows/tenant/year)
-SELECT add_retention_policy('pnl_snapshots', INTERVAL '365 days', if_not_exists => TRUE);
-
--- Continuous aggregate for hourly rollups (optional, for faster long-range queries)
--- This materializes hourly averages for efficient 30-day+ chart queries
-CREATE MATERIALIZED VIEW pnl_hourly
-WITH (timescaledb.continuous) AS
-SELECT
-    tenant_id,
-    time_bucket('1 hour', snapshot_at) AS bucket,
-    AVG(total_pnl) AS avg_total_pnl,
-    MAX(total_pnl) AS max_total_pnl,
-    MIN(total_pnl) AS min_total_pnl,
-    LAST(total_pnl, snapshot_at) AS last_total_pnl,
-    SUM(trades_count) AS total_trades,
-    AVG(total_equity) AS avg_equity
-FROM pnl_snapshots
-GROUP BY tenant_id, time_bucket('1 hour', snapshot_at)
-WITH NO DATA;
-
--- Refresh policy for continuous aggregate
-SELECT add_continuous_aggregate_policy('pnl_hourly',
-    start_offset => INTERVAL '3 hours',
-    end_offset => INTERVAL '1 hour',
-    schedule_interval => INTERVAL '1 hour',
-    if_not_exists => TRUE
-);
+-- Enable compression, retention, and continuous aggregate (TimescaleDB only)
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        EXECUTE 'ALTER TABLE pnl_snapshots SET (
+            timescaledb.compress,
+            timescaledb.compress_segmentby = ''tenant_id'',
+            timescaledb.compress_orderby = ''snapshot_at DESC''
+        )';
+        PERFORM add_compression_policy('pnl_snapshots', INTERVAL '7 days', if_not_exists => TRUE);
+        -- Retain 1 year of snapshots (5-min intervals = ~105K rows/tenant/year)
+        PERFORM add_retention_policy('pnl_snapshots', INTERVAL '365 days', if_not_exists => TRUE);
+        -- Continuous aggregate for hourly rollups (for faster long-range queries)
+        EXECUTE '
+            CREATE MATERIALIZED VIEW pnl_hourly
+            WITH (timescaledb.continuous) AS
+            SELECT
+                tenant_id,
+                time_bucket(''1 hour'', snapshot_at) AS bucket,
+                AVG(total_pnl) AS avg_total_pnl,
+                MAX(total_pnl) AS max_total_pnl,
+                MIN(total_pnl) AS min_total_pnl,
+                LAST(total_pnl, snapshot_at) AS last_total_pnl,
+                SUM(trades_count) AS total_trades,
+                AVG(total_equity) AS avg_equity
+            FROM pnl_snapshots
+            GROUP BY tenant_id, time_bucket(''1 hour'', snapshot_at)
+            WITH NO DATA
+        ';
+        -- Refresh policy for continuous aggregate
+        PERFORM add_continuous_aggregate_policy('pnl_hourly',
+            start_offset => INTERVAL '3 hours',
+            end_offset => INTERVAL '1 hour',
+            schedule_interval => INTERVAL '1 hour',
+            if_not_exists => TRUE
+        );
+    END IF;
+END $$;
 
 -- Comments
 COMMENT ON TABLE pnl_snapshots IS 'Periodic P&L snapshots (every 5 minutes) for dashboard charts';

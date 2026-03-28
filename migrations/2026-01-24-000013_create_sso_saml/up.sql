@@ -314,11 +314,15 @@ CREATE TABLE sso_audit_log (
     PRIMARY KEY (id, event_time)
 );
 
--- Convert to TimescaleDB hypertable
-SELECT create_hypertable('sso_audit_log', 'event_time', 
-    chunk_time_interval => INTERVAL '1 week',
-    if_not_exists => TRUE
-);
+-- Convert to TimescaleDB hypertable (if available)
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM create_hypertable('sso_audit_log', 'event_time', 
+            chunk_time_interval => INTERVAL '1 week',
+            if_not_exists => TRUE
+        );
+    END IF;
+END $$;
 
 CREATE INDEX idx_sso_audit_tenant_time ON sso_audit_log(tenant_id, event_time DESC);
 CREATE INDEX idx_sso_audit_user ON sso_audit_log(tenant_id, user_id, event_time DESC);

@@ -315,11 +315,15 @@ CREATE TABLE IF NOT EXISTS domain_audit_log (
     PRIMARY KEY (id, event_time)
 );
 
--- Convert to TimescaleDB hypertable
-SELECT create_hypertable('domain_audit_log', 'event_time', 
-    chunk_time_interval => INTERVAL '1 week',
-    if_not_exists => TRUE
-);
+-- Convert to TimescaleDB hypertable (if available)
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM create_hypertable('domain_audit_log', 'event_time', 
+            chunk_time_interval => INTERVAL '1 week',
+            if_not_exists => TRUE
+        );
+    END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_domain_audit_tenant_time ON domain_audit_log(tenant_id, event_time DESC);
 CREATE INDEX IF NOT EXISTS idx_domain_audit_domain ON domain_audit_log(domain_id, event_time DESC);
@@ -364,11 +368,15 @@ CREATE TABLE IF NOT EXISTS domain_traffic_stats (
     PRIMARY KEY (id, bucket_time)
 );
 
--- Convert to TimescaleDB hypertable with 1-hour buckets
-SELECT create_hypertable('domain_traffic_stats', 'bucket_time', 
-    chunk_time_interval => INTERVAL '1 day',
-    if_not_exists => TRUE
-);
+-- Convert to TimescaleDB hypertable with 1-hour buckets (if available)
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM create_hypertable('domain_traffic_stats', 'bucket_time', 
+            chunk_time_interval => INTERVAL '1 day',
+            if_not_exists => TRUE
+        );
+    END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_domain_traffic_tenant ON domain_traffic_stats(tenant_id, bucket_time DESC);
 CREATE INDEX IF NOT EXISTS idx_domain_traffic_domain ON domain_traffic_stats(domain_id, bucket_time DESC);
