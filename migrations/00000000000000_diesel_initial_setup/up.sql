@@ -2,8 +2,8 @@
 -- and other internal bookkeeping. This file is safe to edit, any future
 -- changes will be added to existing projects as new migrations.
 
-
-
+-- Enable UUID generation functions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Sets up a trigger for the given table to automatically set a column called
 -- `updated_at` whenever the row is modified (unless `updated_at` was included
