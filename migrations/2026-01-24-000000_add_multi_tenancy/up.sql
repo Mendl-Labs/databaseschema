@@ -107,16 +107,6 @@ WHERE tenant_id IS NULL;
 ALTER TABLE backtest_results ALTER COLUMN tenant_id SET NOT NULL;
 CREATE INDEX idx_backtest_results_tenant_id ON backtest_results(tenant_id);
 
--- Add tenant_id to historical_orders table (for tenant-specific data collection)
--- Note: historical_orders is a TimescaleDB hypertable, so we cannot add foreign key constraints
--- The column is added without constraint and kept nullable since this is shared market data
-ALTER TABLE historical_orders ADD COLUMN IF NOT EXISTS tenant_id UUID;
-
--- Historical orders might be shared across tenants initially (market data)
--- So we'll make tenant_id nullable and add it gradually
--- Create index for tenant-filtered queries
-CREATE INDEX idx_historical_orders_tenant_id ON historical_orders(tenant_id) WHERE tenant_id IS NOT NULL;
-
 -- Create audit_logs table for compliance
 CREATE TABLE audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

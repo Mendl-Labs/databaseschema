@@ -15,8 +15,6 @@ DROP TRIGGER IF EXISTS update_tenant_data_sources_updated_at ON tenant_data_sour
 DROP FUNCTION IF EXISTS update_updated_at_column();
 
 -- Remove tenant_id from existing tables
-ALTER TABLE historical_orders DROP COLUMN IF EXISTS tenant_id;
-
 DROP INDEX IF EXISTS idx_backtest_results_tenant_id;
 ALTER TABLE backtest_results DROP COLUMN IF EXISTS tenant_id;
 
