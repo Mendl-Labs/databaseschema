@@ -140,6 +140,20 @@ jobs:
         docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}
         docker run --rm --network host -e DATABASE_URL="$DATABASE_URL" ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}
 
+    - name: Update OpsWatch DB credentials
+      run: |
+        CREDS_FILE="/opt/bridges/.db-credentials.env"
+        cat > "$CREDS_FILE" <<EOF
+        PGHOST=${POSTGRES_HOST}
+        PGPORT=${POSTGRES_PORT}
+        PGUSER=${POSTGRES_USER}
+        PGPASSWORD=${POSTGRES_PASSWORD}
+        PGDATABASE=${POSTGRES_DB}
+        EOF
+        sed -i 's/^[[:space:]]*//' "$CREDS_FILE"
+        chmod 600 "$CREDS_FILE"
+        echo "[OK] OpsWatch DB credentials updated"
+
     - name: Migration Summary
       run: |
         echo "=========================================="
