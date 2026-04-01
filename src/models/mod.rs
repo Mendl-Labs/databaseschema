@@ -20,6 +20,10 @@ pub mod pnl_snapshot;
 pub mod trade_history;
 pub mod kill_switch_event;
 
+// Agentic workflow models
+pub mod workflow_run;
+pub mod workflow_step;
+
 // Core models
 pub mod backtest_job;
 pub mod backtest_result;
@@ -50,3 +54,7 @@ pub use usage_event::{NewUsageEvent, UsageDailyAggregate, UsageEvent, UsageMonth
 // Live trading re-exports
 pub use pnl_snapshot::{DeploymentPnL, ExchangePnL, NewPnLSnapshot, PnLSnapshot};
 pub use trade_history::{NewTradeRecord, TradeRecord, TradeSide};
+
+// Agentic workflow re-exports
+pub use workflow_run::{NewWorkflowRun, WorkflowRun, WorkflowRunUpdate};
+pub use workflow_step::{NewWorkflowStep, WorkflowStep, WorkflowStepUpdate};
