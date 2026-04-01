@@ -3452,6 +3452,41 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    workflow_runs (id) {
+        id -> Uuid,
+        tenant_id -> Uuid,
+        workflow_type -> Varchar,
+        status -> Varchar,
+        title -> Nullable<Varchar>,
+        config -> Jsonb,
+        result_summary -> Nullable<Jsonb>,
+        current_iteration -> Int4,
+        max_iterations -> Int4,
+        strategy_id -> Nullable<Uuid>,
+        error_message -> Nullable<Text>,
+        created_at -> Timestamptz,
+        started_at -> Nullable<Timestamptz>,
+        completed_at -> Nullable<Timestamptz>,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    workflow_steps (id) {
+        id -> Uuid,
+        run_id -> Uuid,
+        step_number -> Int4,
+        step_type -> Varchar,
+        status -> Varchar,
+        input -> Jsonb,
+        output -> Nullable<Jsonb>,
+        error_message -> Nullable<Text>,
+        created_at -> Timestamptz,
+        completed_at -> Nullable<Timestamptz>,
+    }
+}
+
 diesel::joinable!(ai_conversations -> tenants (tenant_id));
 diesel::joinable!(ai_conversations -> strategies (strategy_id));
 diesel::joinable!(ai_conversations -> backtest_jobs (job_id));
@@ -3587,6 +3622,8 @@ diesel::joinable!(users -> tenants (tenant_id));
 diesel::joinable!(webhook_deliveries -> tenants (tenant_id));
 diesel::joinable!(webhook_deliveries -> webhook_endpoints (endpoint_id));
 diesel::joinable!(webhook_endpoints -> tenants (tenant_id));
+diesel::joinable!(workflow_runs -> tenants (tenant_id));
+diesel::joinable!(workflow_steps -> workflow_runs (run_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     ai_conversations,
@@ -3712,4 +3749,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     users,
     webhook_deliveries,
     webhook_endpoints,
+    workflow_runs,
+    workflow_steps,
 );
