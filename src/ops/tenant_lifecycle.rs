@@ -401,7 +401,7 @@ pub async fn deprovision_tenant(
     diesel::update(tenants::table.filter(tenants::id.eq(tenant_id)))
         .set((
             tenants::is_active.eq(false),
-            tenants::subscription_tier.eq(SubscriptionTier::Free),
+            tenants::subscription_tier.eq(SubscriptionTier::Explorer),
             tenants::settings.eq(updated_settings),
             tenants::updated_at.eq(now),
         ))
@@ -440,10 +440,11 @@ pub async fn provision_tenant(
 
     // Calculate tier limits
     let (rate_limit, max_backtests, max_strategies, data_months) = match tier {
-        SubscriptionTier::Free => (100, 2, 3, 1),
-        SubscriptionTier::Starter => (1000, 10, 10, 6),
-        SubscriptionTier::Professional => (10000, 50, 50, 24),
-        SubscriptionTier::Enterprise => (100000, 500, 200, 120),
+        SubscriptionTier::Explorer => (100, 1, 3, 6),
+        SubscriptionTier::Trader => (1000, 3, 25, 24),
+        SubscriptionTier::Professional => (10000, 10, 100, 60),
+        SubscriptionTier::Institution => (100000, 25, 500, 120),
+        SubscriptionTier::Enterprise => (1000000, -1, -1, -1),
     };
 
     let features = serde_json::json!({
