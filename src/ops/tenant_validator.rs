@@ -94,7 +94,7 @@ impl TenantValidator {
                 cached_at: Instant::now(),
             },
             None => CachedTenantInfo {
-                tier: SubscriptionTier::Free,
+                tier: SubscriptionTier::Explorer,
                 is_active: false,
                 cached_at: Instant::now(),
             },

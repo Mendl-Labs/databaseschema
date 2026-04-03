@@ -137,10 +137,11 @@ pub async fn update_tenant_tier(
     tier: SubscriptionTier,
 ) -> Result<Tenant, diesel::result::Error> {
     let (rate_limit, max_backtests, max_strategies, data_months) = match tier {
-        SubscriptionTier::Free => (100, 1, 5, 3),
-        SubscriptionTier::Starter => (1000, 3, 25, 12),
-        SubscriptionTier::Professional => (5000, 10, 100, 36),
-        SubscriptionTier::Enterprise => (50000, 50, -1, 60),
+        SubscriptionTier::Explorer => (100, 1, 3, 6),
+        SubscriptionTier::Trader => (1000, 3, 25, 24),
+        SubscriptionTier::Professional => (10000, 10, 100, 60),
+        SubscriptionTier::Institution => (100000, 25, 500, 120),
+        SubscriptionTier::Enterprise => (1000000, -1, -1, -1),
     };
 
     diesel::update(tenants::table.find(tenant_id))
@@ -181,11 +182,11 @@ pub async fn clear_stripe_subscription(
     diesel::update(tenants::table.find(tenant_id))
         .set((
             tenants::stripe_subscription_id.eq(None::<String>),
-            tenants::subscription_tier.eq(SubscriptionTier::Free),
-            tenants::api_rate_limit.eq(100),
+            tenants::subscription_tier.eq(SubscriptionTier::Explorer),
+            tenants::api_rate_limit.eq(1000),
             tenants::max_concurrent_backtests.eq(1),
-            tenants::max_strategies.eq(5),
-            tenants::historical_data_months.eq(3),
+            tenants::max_strategies.eq(3),
+            tenants::historical_data_months.eq(6),
             tenants::updated_at.eq(Utc::now()),
         ))
         .get_result(conn)

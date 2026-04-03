@@ -17,18 +17,20 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, AsExpression, FromSqlRow)]
 #[diesel(sql_type = crate::schema::sql_types::SubscriptionTier)]
 pub enum SubscriptionTier {
-    Free,
-    Starter,
+    Explorer,
+    Trader,
     Professional,
+    Institution,
     Enterprise,
 }
 
 impl ToSql<crate::schema::sql_types::SubscriptionTier, Pg> for SubscriptionTier {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
         match *self {
-            SubscriptionTier::Free => out.write_all(b"free")?,
-            SubscriptionTier::Starter => out.write_all(b"starter")?,
+            SubscriptionTier::Explorer => out.write_all(b"explorer")?,
+            SubscriptionTier::Trader => out.write_all(b"trader")?,
             SubscriptionTier::Professional => out.write_all(b"professional")?,
+            SubscriptionTier::Institution => out.write_all(b"institution")?,
             SubscriptionTier::Enterprise => out.write_all(b"enterprise")?,
         }
         Ok(IsNull::No)
@@ -38,9 +40,10 @@ impl ToSql<crate::schema::sql_types::SubscriptionTier, Pg> for SubscriptionTier 
 impl FromSql<crate::schema::sql_types::SubscriptionTier, Pg> for SubscriptionTier {
     fn from_sql(bytes: PgValue<'_>) -> deserialize::Result<Self> {
         match bytes.as_bytes() {
-            b"free" => Ok(SubscriptionTier::Free),
-            b"starter" => Ok(SubscriptionTier::Starter),
-            b"professional" => Ok(SubscriptionTier::Professional),
+            b"explorer" | b"free" => Ok(SubscriptionTier::Explorer),
+            b"trader" => Ok(SubscriptionTier::Trader),
+            b"professional" | b"pro" => Ok(SubscriptionTier::Professional),
+            b"institution" | b"live" => Ok(SubscriptionTier::Institution),
             b"enterprise" => Ok(SubscriptionTier::Enterprise),
             _ => Err("Unrecognized subscription_tier variant".into()),
         }
@@ -50,9 +53,10 @@ impl FromSql<crate::schema::sql_types::SubscriptionTier, Pg> for SubscriptionTie
 impl std::fmt::Display for SubscriptionTier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SubscriptionTier::Free => write!(f, "free"),
-            SubscriptionTier::Starter => write!(f, "starter"),
+            SubscriptionTier::Explorer => write!(f, "explorer"),
+            SubscriptionTier::Trader => write!(f, "trader"),
             SubscriptionTier::Professional => write!(f, "professional"),
+            SubscriptionTier::Institution => write!(f, "institution"),
             SubscriptionTier::Enterprise => write!(f, "enterprise"),
         }
     }
@@ -60,7 +64,7 @@ impl std::fmt::Display for SubscriptionTier {
 
 impl Default for SubscriptionTier {
     fn default() -> Self {
-        SubscriptionTier::Free
+        SubscriptionTier::Explorer
     }
 }
 
@@ -135,10 +139,11 @@ impl NewTenant {
     /// Create a new tenant with default settings for the given tier
     pub fn with_tier(company_name: String, slug: String, tier: SubscriptionTier) -> Self {
         let (rate_limit, max_backtests, max_strategies, data_months) = match tier {
-            SubscriptionTier::Free => (100, 1, 5, 3),
-            SubscriptionTier::Starter => (1000, 3, 25, 12),
-            SubscriptionTier::Professional => (5000, 10, 100, 36),
-            SubscriptionTier::Enterprise => (50000, 50, -1, 60), // -1 = unlimited
+            SubscriptionTier::Explorer => (100, 1, 3, 6),
+            SubscriptionTier::Trader => (1000, 3, 25, 24),
+            SubscriptionTier::Professional => (10000, 10, 100, 60),
+            SubscriptionTier::Institution => (100000, 25, 500, 120),
+            SubscriptionTier::Enterprise => (1000000, -1, -1, -1), // -1 = unlimited
         };
 
         Self {
@@ -182,20 +187,20 @@ pub struct NewTenantWithId {
 }
 
 impl NewTenantWithId {
-    /// Create a new tenant with the specified ID and Starter tier defaults
+    /// Create a new tenant with the specified ID and Explorer tier defaults
     pub fn with_id(id: Uuid, company_name: String, slug: String) -> Self {
         Self {
             id,
             company_name,
-            subscription_tier: SubscriptionTier::Starter,
+            subscription_tier: SubscriptionTier::Explorer,
             is_active: true,
             team_member_count: 0,
             webhook_endpoint_count: 0,
             slug: Some(slug),
-            api_rate_limit: 1000,
-            max_concurrent_backtests: 3,
-            max_strategies: 25,
-            historical_data_months: 12,
+            api_rate_limit: 100,
+            max_concurrent_backtests: 1,
+            max_strategies: 5,
+            historical_data_months: 3,
             features: serde_json::json!({}),
             settings: serde_json::json!({}),
         }
