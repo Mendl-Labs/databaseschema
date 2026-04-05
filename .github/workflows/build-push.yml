@@ -70,6 +70,35 @@ jobs:
         echo "Tags: ${{ steps.meta.outputs.version }}, latest"
         echo "=========================================="
 
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 30
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: 1.85.0
+
+    - name: Install cargo-tarpaulin
+      run: cargo install cargo-tarpaulin --locked || true
+
+    - name: Run Coverage
+      continue-on-error: true
+      run: cargo tarpaulin --workspace --out xml --output-dir ./coverage --timeout 300
+
+    - name: Upload Coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        flags: databaseschema
+        files: coverage/cobertura.xml
+        fail_ci_if_error: false
+
   run-migrations:
     needs: build-and-push
     runs-on: [self-hosted, linux, x64]
