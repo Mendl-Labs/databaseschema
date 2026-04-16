@@ -73,6 +73,8 @@ pub struct NewBacktestJob {
     pub current_generation: Option<i32>,
     /// Total generations from params (prevents null/null display in UI)
     pub total_generations: Option<i32>,
+    /// Job priority: 0=low, 1=normal (default), 2=high, 3=critical
+    pub priority: i32,
 }
 
 /// Updateable fields for backtest jobs
