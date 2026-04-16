@@ -317,6 +317,7 @@ diesel::table! {
         phase_details -> Nullable<Jsonb>,
         params_json -> Jsonb,
         tenant_id -> Uuid,
+        priority -> Int4,
     }
 }
 
