@@ -1,5 +1,6 @@
 pub mod audit_log_ops;
 pub mod backtest_result_ops;
+pub mod deployed_strategy_ops;
 pub mod pnl_snapshot_ops;
 pub mod kill_switch_event_ops;
 pub mod strategy_ops;
