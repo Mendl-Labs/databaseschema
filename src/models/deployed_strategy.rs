@@ -44,6 +44,8 @@ pub struct DeployedStrategy {
     // Deployment mode and risk
     pub mode: String,
     pub cooldown_minutes: Option<i32>,
+    /// Explicit status: "active", "paused", or "stopped"
+    pub status: String,
 }
 
 /// New deployed strategy for insertion

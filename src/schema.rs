@@ -1069,6 +1069,8 @@ diesel::table! {
         #[max_length = 20]
         mode -> Varchar,
         cooldown_minutes -> Nullable<Int4>,
+        #[max_length = 20]
+        status -> Varchar,
     }
 }
 
