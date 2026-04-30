@@ -60,6 +60,8 @@ pub struct TradeRecord {
     pub exchange_order_id: String,
     pub executed_at: DateTime<Utc>,
     pub recorded_at: DateTime<Utc>,
+    pub signal_price: Option<BigDecimal>,
+    pub signal_at: Option<DateTime<Utc>>,
 }
 
 /// New trade record for insertion
@@ -81,6 +83,8 @@ pub struct NewTradeRecord {
     pub exchange_trade_id: String,
     pub exchange_order_id: String,
     pub executed_at: DateTime<Utc>,
+    pub signal_price: Option<BigDecimal>,
+    pub signal_at: Option<DateTime<Utc>>,
 }
 
 impl NewTradeRecord {
@@ -112,6 +116,8 @@ impl NewTradeRecord {
             exchange_trade_id: String::new(),
             exchange_order_id: String::new(),
             executed_at,
+            signal_price: None,
+            signal_at: None,
         }
     }
 

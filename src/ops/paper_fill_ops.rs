@@ -78,6 +78,8 @@ pub async fn record_paper_fill(
                 exchange_trade_id: fill_id,
                 exchange_order_id: order_id,
                 executed_at,
+                signal_price: None,
+                signal_at: None,
             };
 
             trade_history_ops::insert_trade(conn, trade).await?;
