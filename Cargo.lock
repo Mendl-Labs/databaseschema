@@ -318,6 +318,7 @@ dependencies = [
  "postgres-native-tls",
  "rand",
  "reqwest",
+ "scoped-futures",
  "serde",
  "serde_json",
  "thiserror",
