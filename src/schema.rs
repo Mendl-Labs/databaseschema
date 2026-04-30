@@ -3424,6 +3424,23 @@ diesel::table! {
 }
 
 diesel::table! {
+    deployment_positions (deployment_id, exchange, symbol) {
+        deployment_id -> Uuid,
+        tenant_id -> Uuid,
+        #[max_length = 50]
+        exchange -> Varchar,
+        #[max_length = 50]
+        symbol -> Varchar,
+        qty -> Numeric,
+        avg_cost -> Numeric,
+        realized_pnl_total -> Numeric,
+        last_mark_price -> Nullable<Numeric>,
+        last_mark_at -> Nullable<Timestamptz>,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     pnl_snapshots (snapshot_at, tenant_id) {
         id -> Uuid,
         tenant_id -> Uuid,
@@ -3627,6 +3644,7 @@ diesel::joinable!(webhook_deliveries -> webhook_endpoints (endpoint_id));
 diesel::joinable!(webhook_endpoints -> tenants (tenant_id));
 diesel::joinable!(workflow_runs -> tenants (tenant_id));
 diesel::joinable!(workflow_steps -> workflow_runs (run_id));
+diesel::joinable!(deployment_positions -> deployed_strategies (deployment_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     ai_conversations,
@@ -3663,6 +3681,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     data_retention_schedules,
     data_subject_requests,
     deployed_strategies,
+    deployment_positions,
     domain_audit_log,
     domain_dns_records,
     domain_ssl_certificates,

@@ -16,6 +16,7 @@ pub mod user;
 pub mod user_preference;
 
 // Live trading models
+pub mod deployment_position;
 pub mod pnl_snapshot;
 pub mod trade_history;
 pub mod kill_switch_event;
@@ -52,6 +53,7 @@ pub use user_preference::{NewUserPreference, UpdateUserPreference, UserPreferenc
 pub use usage_event::{NewUsageEvent, UsageDailyAggregate, UsageEvent, UsageMonthlySummary};
 
 // Live trading re-exports
+pub use deployment_position::{DeploymentPosition, NewDeploymentPosition, UpdateDeploymentPosition};
 pub use pnl_snapshot::{DeploymentPnL, ExchangePnL, NewPnLSnapshot, PnLSnapshot};
 pub use trade_history::{NewTradeRecord, TradeRecord, TradeSide};
 
