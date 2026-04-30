@@ -3420,6 +3420,23 @@ diesel::table! {
         exchange_order_id -> Varchar,
         executed_at -> Timestamptz,
         recorded_at -> Timestamptz,
+        signal_price -> Nullable<Numeric>,
+        signal_at -> Nullable<Timestamptz>,
+    }
+}
+
+diesel::table! {
+    market_data_health (tenant_id, exchange, symbol) {
+        tenant_id -> Uuid,
+        #[max_length = 50]
+        exchange -> Varchar,
+        #[max_length = 50]
+        symbol -> Varchar,
+        last_tick_at -> Nullable<Timestamptz>,
+        last_orderbook_at -> Nullable<Timestamptz>,
+        ticks_per_sec -> Double,
+        gap_count_5m -> Int4,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -3719,6 +3736,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     kill_switch_events,
     maintenance_components,
     maintenance_windows,
+    market_data_health,
     notification_preferences,
     optimization_iterations,
     optimization_runs,
