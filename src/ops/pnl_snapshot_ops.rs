@@ -23,14 +23,18 @@ pub async fn insert_snapshot(
 }
 
 /// Insert or update a P&L snapshot (upsert)
-/// Uses ON CONFLICT to handle duplicate (snapshot_at, tenant_id)
+/// Uses ON CONFLICT to handle duplicate (snapshot_at, tenant_id, mode)
 pub async fn upsert_snapshot(
     conn: &mut AsyncPgConnection,
     snapshot: NewPnLSnapshot,
 ) -> Result<PnLSnapshot, diesel::result::Error> {
     diesel::insert_into(pnl_snapshots::table)
         .values(&snapshot)
-        .on_conflict((pnl_snapshots::snapshot_at, pnl_snapshots::tenant_id))
+        .on_conflict((
+            pnl_snapshots::snapshot_at,
+            pnl_snapshots::tenant_id,
+            pnl_snapshots::mode,
+        ))
         .do_update()
         .set((
             pnl_snapshots::total_pnl.eq(&snapshot.total_pnl),

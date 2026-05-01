@@ -3458,7 +3458,7 @@ diesel::table! {
 }
 
 diesel::table! {
-    pnl_snapshots (snapshot_at, tenant_id) {
+    pnl_snapshots (snapshot_at, tenant_id, mode) {
         id -> Uuid,
         tenant_id -> Uuid,
         snapshot_at -> Timestamptz,
@@ -3474,6 +3474,7 @@ diesel::table! {
         winning_trades -> Int4,
         losing_trades -> Int4,
         created_at -> Timestamptz,
+        mode -> Text,
     }
 }
 
