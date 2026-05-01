@@ -3,7 +3,7 @@
 //! CRUD operations for tenants table — foundation for billing,
 //! rate limiting, and tier enforcement across all engines.
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use uuid::Uuid;
@@ -187,6 +187,25 @@ pub async fn clear_stripe_subscription(
             tenants::max_concurrent_backtests.eq(1),
             tenants::max_strategies.eq(3),
             tenants::historical_data_months.eq(6),
+            tenants::subscription_current_period_end.eq(None::<DateTime<Utc>>),
+            tenants::subscription_cancel_at_period_end.eq(false),
+            tenants::updated_at.eq(Utc::now()),
+        ))
+        .get_result(conn)
+        .await
+}
+
+/// Persist subscription period info from Stripe webhook
+pub async fn update_subscription_period(
+    conn: &mut AsyncPgConnection,
+    tenant_id: Uuid,
+    current_period_end: DateTime<Utc>,
+    cancel_at_period_end: bool,
+) -> Result<Tenant, diesel::result::Error> {
+    diesel::update(tenants::table.find(tenant_id))
+        .set((
+            tenants::subscription_current_period_end.eq(Some(current_period_end)),
+            tenants::subscription_cancel_at_period_end.eq(cancel_at_period_end),
             tenants::updated_at.eq(Utc::now()),
         ))
         .get_result(conn)
