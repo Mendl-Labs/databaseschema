@@ -102,6 +102,8 @@ pub struct Tenant {
     pub historical_data_months: i32,
     pub features: serde_json::Value,
     pub settings: serde_json::Value,
+    pub subscription_current_period_end: Option<DateTime<Utc>>,
+    pub subscription_cancel_at_period_end: bool,
 }
 
 impl Tenant {
@@ -233,4 +235,6 @@ pub struct TenantUpdate {
     pub features: Option<serde_json::Value>,
     pub settings: Option<serde_json::Value>,
     pub updated_at: Option<DateTime<Utc>>,
+    pub subscription_current_period_end: Option<DateTime<Utc>>,
+    pub subscription_cancel_at_period_end: Option<bool>,
 }
