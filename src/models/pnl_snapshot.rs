@@ -15,7 +15,7 @@ use crate::schema::pnl_snapshots;
 /// Fields must match schema.rs pnl_snapshots table exactly (in order)
 #[derive(Debug, Clone, Queryable, Identifiable, Selectable, Serialize, Deserialize)]
 #[diesel(table_name = pnl_snapshots)]
-#[diesel(primary_key(snapshot_at, tenant_id))]
+#[diesel(primary_key(snapshot_at, tenant_id, mode))]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct PnLSnapshot {
     pub id: Uuid,
@@ -33,6 +33,9 @@ pub struct PnLSnapshot {
     pub winning_trades: i32,
     pub losing_trades: i32,
     pub created_at: DateTime<Utc>,
+    /// Deployment mode this row represents: "paper", "live", or "legacy"
+    /// (rows captured before the per-mode split migration).
+    pub mode: String,
 }
 
 /// New P&L snapshot for insertion
@@ -52,10 +55,16 @@ pub struct NewPnLSnapshot {
     pub trades_count: i32,
     pub winning_trades: i32,
     pub losing_trades: i32,
+    /// "paper" | "live" | "legacy". Required so each (snapshot_at,
+    /// tenant_id) point keeps paper and live PnL on separate rows.
+    pub mode: String,
 }
 
 impl NewPnLSnapshot {
-    /// Create a new snapshot with required fields
+    /// Create a new snapshot with required fields. Defaults to
+    /// `mode = "paper"` because paper is the only currently-writing
+    /// pipeline (`paper_trade_writer`); the periodic scheduler always
+    /// sets the mode explicitly.
     pub fn new(
         tenant_id: Uuid,
         snapshot_at: DateTime<Utc>,
@@ -77,7 +86,14 @@ impl NewPnLSnapshot {
             trades_count: 0,
             winning_trades: 0,
             losing_trades: 0,
+            mode: "paper".to_string(),
         }
+    }
+
+    /// Override the deployment mode (e.g. "live").
+    pub fn with_mode(mut self, mode: impl Into<String>) -> Self {
+        self.mode = mode.into();
+        self
     }
 
     /// Set daily P&L
