@@ -3034,6 +3034,8 @@ diesel::table! {
         historical_data_months -> Int4,
         features -> Jsonb,
         settings -> Jsonb,
+        subscription_current_period_end -> Nullable<Timestamptz>,
+        subscription_cancel_at_period_end -> Bool,
     }
 }
 
