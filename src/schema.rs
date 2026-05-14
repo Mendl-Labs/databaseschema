@@ -226,8 +226,9 @@ diesel::table! {
         tenant_id -> Nullable<Uuid>,
         preferred_strategy_types -> Nullable<Jsonb>,
         #[max_length = 50]
-        risk_tolerance -> Nullable<Varchar>,
-        preferred_execution_tier -> Nullable<Int4>,
+        preferred_fitness_preset -> Nullable<Varchar>,
+        preferred_exchanges -> Nullable<Jsonb>,
+        preferred_capital_range -> Nullable<Jsonb>,
         common_parameters -> Nullable<Jsonb>,
         style_notes -> Nullable<Text>,
         avg_max_drawdown -> Nullable<Numeric>,
@@ -318,6 +319,7 @@ diesel::table! {
         params_json -> Jsonb,
         tenant_id -> Uuid,
         priority -> Int4,
+        strategy_tags -> Nullable<Jsonb>,
     }
 }
 
