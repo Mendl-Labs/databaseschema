@@ -320,6 +320,11 @@ diesel::table! {
         tenant_id -> Uuid,
         priority -> Int4,
         strategy_tags -> Nullable<Jsonb>,
+        parent_job_id -> Nullable<Uuid>,
+        root_job_id -> Nullable<Uuid>,
+        code_hash -> Nullable<Text>,
+        params_hash -> Nullable<Text>,
+        hypothesis -> Nullable<Text>,
     }
 }
 
@@ -2211,6 +2216,20 @@ diesel::table! {
 }
 
 diesel::table! {
+    run_lineage_notes (id) {
+        id -> Uuid,
+        job_id -> Uuid,
+        tenant_id -> Uuid,
+        #[max_length = 32]
+        note_type -> Varchar,
+        body -> Text,
+        #[max_length = 64]
+        author -> Nullable<Varchar>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     saml_attribute_mappings (id) {
         id -> Uuid,
         tenant_id -> Uuid,
@@ -3616,6 +3635,8 @@ diesel::joinable!(privacy_settings -> tenants (tenant_id));
 diesel::joinable!(processing_activities -> tenants (tenant_id));
 diesel::joinable!(restore_jobs -> backups (backup_id));
 diesel::joinable!(restore_jobs -> tenants (tenant_id));
+diesel::joinable!(run_lineage_notes -> backtest_jobs (job_id));
+diesel::joinable!(run_lineage_notes -> tenants (tenant_id));
 diesel::joinable!(saml_attribute_mappings -> saml_configurations (saml_config_id));
 diesel::joinable!(saml_configurations -> identity_providers (idp_id));
 diesel::joinable!(saml_group_mappings -> saml_configurations (saml_config_id));
@@ -3750,6 +3771,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     privacy_settings,
     processing_activities,
     restore_jobs,
+    run_lineage_notes,
     saml_attribute_mappings,
     saml_configurations,
     saml_group_mappings,
