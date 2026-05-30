@@ -45,6 +45,12 @@ jobs:
       run: |
         SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
         echo "version=$SHORT_SHA" >> $GITHUB_OUTPUT
+        # NOTE: :latest is published because downstream consumers
+        # (DataEngine migration init container, BacktestingEngine QA migration
+        # hook) reference it. SAFE ONLY because every consumer pairs it with
+        # `pullPolicy: Always` Ã¢â‚¬â€ never use `:latest` with `IfNotPresent`
+        # (caused stale-image incidents, see 2026-05-30 audit). Long term:
+        # pin consumers to a specific SHA and remove this tag.
         echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$SHORT_SHA,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_OUTPUT
 
     - name: Build and push
@@ -185,4 +191,3 @@ jobs:
         echo "=========================================="
         echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }}"
         echo "=========================================="
-
