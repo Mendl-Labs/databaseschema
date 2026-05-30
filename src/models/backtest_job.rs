@@ -46,6 +46,16 @@ pub struct BacktestJobRecord {
     pub phase_details: Option<serde_json::Value>,
     /// Full BacktestJobParams serialized as JSON
     pub params_json: serde_json::Value,
+    /// Lineage: parent run this was iterated from (NULL = root).
+    pub parent_job_id: Option<Uuid>,
+    /// Lineage: cached root of this lineage tree (= id for roots).
+    pub root_job_id: Option<Uuid>,
+    /// sha256 (lowercase hex) of strategy source code.
+    pub code_hash: Option<String>,
+    /// sha256 (lowercase hex) of canonical params JSON.
+    pub params_hash: Option<String>,
+    /// User-supplied one-liner about what they expect from this run.
+    pub hypothesis: Option<String>,
 }
 
 /// Insertable record for new backtest jobs
@@ -75,6 +85,19 @@ pub struct NewBacktestJob {
     pub total_generations: Option<i32>,
     /// Job priority: 0=low, 1=normal (default), 2=high, 3=critical
     pub priority: i32,
+    /// Lineage: parent run this was iterated from. Set by auto-detect or
+    /// later via reparent_backtest_job(). Insert as None for roots.
+    pub parent_job_id: Option<Uuid>,
+    /// Lineage: cached root of this lineage tree. Insert as None for roots
+    /// (DB backfill / trigger paths set it = id). When parent is set, callers
+    /// should populate this to the parent's root_job_id.
+    pub root_job_id: Option<Uuid>,
+    /// sha256 (lowercase hex, 64 chars) of the strategy source code.
+    pub code_hash: Option<String>,
+    /// sha256 (lowercase hex, 64 chars) of the canonical params JSON.
+    pub params_hash: Option<String>,
+    /// User-supplied one-liner about what they expect from this run.
+    pub hypothesis: Option<String>,
 }
 
 /// Updateable fields for backtest jobs
