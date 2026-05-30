@@ -30,6 +30,7 @@ pub mod workflow_step;
 pub mod backtest_job;
 pub mod backtest_result;
 pub mod deployed_strategy;
+pub mod run_lineage_note;
 pub mod strategy;
 pub mod strategy_order;
 
@@ -62,3 +63,6 @@ pub use trade_history::{NewTradeRecord, TradeRecord, TradeSide};
 // Agentic workflow re-exports
 pub use workflow_run::{NewWorkflowRun, WorkflowRun, WorkflowRunUpdate};
 pub use workflow_step::{NewWorkflowStep, WorkflowStep, WorkflowStepUpdate};
+
+// Run lineage re-exports
+pub use run_lineage_note::{NewRunLineageNote, RunLineageNote};
