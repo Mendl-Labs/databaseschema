@@ -20,7 +20,9 @@ pub enum SubscriptionTier {
     Explorer,
     Trader,
     Professional,
-    Institution,
+    /// Team tier ($249/mo, 10 seats).
+    /// Historically called "Institution" before the 2026-05-30 rename.
+    Team,
     Enterprise,
 }
 
@@ -30,7 +32,7 @@ impl ToSql<crate::schema::sql_types::SubscriptionTier, Pg> for SubscriptionTier 
             SubscriptionTier::Explorer => out.write_all(b"explorer")?,
             SubscriptionTier::Trader => out.write_all(b"trader")?,
             SubscriptionTier::Professional => out.write_all(b"professional")?,
-            SubscriptionTier::Institution => out.write_all(b"institution")?,
+            SubscriptionTier::Team => out.write_all(b"team")?,
             SubscriptionTier::Enterprise => out.write_all(b"enterprise")?,
         }
         Ok(IsNull::No)
@@ -43,7 +45,10 @@ impl FromSql<crate::schema::sql_types::SubscriptionTier, Pg> for SubscriptionTie
             b"explorer" | b"free" => Ok(SubscriptionTier::Explorer),
             b"trader" => Ok(SubscriptionTier::Trader),
             b"professional" | b"pro" => Ok(SubscriptionTier::Professional),
-            b"institution" | b"live" => Ok(SubscriptionTier::Institution),
+            // After the 2026-05-30 ALTER TYPE RENAME VALUE migration the DB
+            // emits "team"; "institution" and "live" remain as defensive
+            // aliases for replicas read mid-migration.
+            b"team" | b"institution" | b"live" => Ok(SubscriptionTier::Team),
             b"enterprise" => Ok(SubscriptionTier::Enterprise),
             _ => Err("Unrecognized subscription_tier variant".into()),
         }
@@ -56,7 +61,7 @@ impl std::fmt::Display for SubscriptionTier {
             SubscriptionTier::Explorer => write!(f, "explorer"),
             SubscriptionTier::Trader => write!(f, "trader"),
             SubscriptionTier::Professional => write!(f, "professional"),
-            SubscriptionTier::Institution => write!(f, "institution"),
+            SubscriptionTier::Team => write!(f, "team"),
             SubscriptionTier::Enterprise => write!(f, "enterprise"),
         }
     }
@@ -144,7 +149,7 @@ impl NewTenant {
             SubscriptionTier::Explorer => (100, 1, 3, 6),
             SubscriptionTier::Trader => (1000, 3, 25, 24),
             SubscriptionTier::Professional => (10000, 10, 100, 60),
-            SubscriptionTier::Institution => (100000, 25, 500, 120),
+            SubscriptionTier::Team => (100000, 25, 500, 120),
             SubscriptionTier::Enterprise => (1000000, -1, -1, -1), // -1 = unlimited
         };
 

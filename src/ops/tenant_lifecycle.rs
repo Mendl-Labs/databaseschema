@@ -443,7 +443,7 @@ pub async fn provision_tenant(
         SubscriptionTier::Explorer => (100, 1, 3, 6),
         SubscriptionTier::Trader => (1000, 3, 25, 24),
         SubscriptionTier::Professional => (10000, 10, 100, 60),
-        SubscriptionTier::Institution => (100000, 25, 500, 120),
+        SubscriptionTier::Team => (100000, 25, 500, 120),
         SubscriptionTier::Enterprise => (1000000, -1, -1, -1),
     };
 
