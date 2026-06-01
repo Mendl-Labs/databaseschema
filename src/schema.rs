@@ -198,6 +198,11 @@ diesel::table! {
         #[max_length = 50]
         mode -> Nullable<Varchar>,
         created_at -> Timestamptz,
+        #[max_length = 20]
+        proposal_mode -> Nullable<Varchar>,
+        coupling_rationale -> Nullable<Text>,
+        #[max_length = 20]
+        user_declared_mode -> Nullable<Varchar>,
     }
 }
 

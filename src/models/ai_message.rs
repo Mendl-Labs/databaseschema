@@ -16,6 +16,9 @@ pub struct AiMessage {
     pub token_count: Option<i32>,
     pub mode: Option<String>,
     pub created_at: DateTime<Utc>,
+    pub proposal_mode: Option<String>,
+    pub coupling_rationale: Option<String>,
+    pub user_declared_mode: Option<String>,
 }
 
 /// Insertable record for ai_messages table
@@ -28,4 +31,7 @@ pub struct NewAiMessage {
     pub actions_json: Option<serde_json::Value>,
     pub token_count: Option<i32>,
     pub mode: Option<String>,
+    pub proposal_mode: Option<String>,
+    pub coupling_rationale: Option<String>,
+    pub user_declared_mode: Option<String>,
 }
