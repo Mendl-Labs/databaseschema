@@ -225,6 +225,24 @@ diesel::table! {
 }
 
 diesel::table! {
+    ai_recommendation_outcomes (id) {
+        id -> Uuid,
+        tenant_id -> Nullable<Uuid>,
+        conversation_id -> Nullable<Uuid>,
+        #[max_length = 50]
+        action_type -> Varchar,
+        #[max_length = 50]
+        surface -> Nullable<Varchar>,
+        from_job_id -> Nullable<Uuid>,
+        #[max_length = 20]
+        proposal_mode -> Nullable<Varchar>,
+        #[max_length = 255]
+        user_id -> Nullable<Varchar>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     ai_user_profiles (user_id) {
         #[max_length = 255]
         user_id -> Varchar,
@@ -3559,6 +3577,9 @@ diesel::joinable!(ai_conversations -> backtest_jobs (job_id));
 diesel::joinable!(ai_feedback -> ai_messages (message_id));
 diesel::joinable!(ai_feedback -> ai_conversations (conversation_id));
 diesel::joinable!(ai_messages -> ai_conversations (conversation_id));
+diesel::joinable!(ai_recommendation_outcomes -> tenants (tenant_id));
+diesel::joinable!(ai_recommendation_outcomes -> ai_conversations (conversation_id));
+diesel::joinable!(ai_recommendation_outcomes -> backtest_jobs (from_job_id));
 diesel::joinable!(ai_strategy_provenance -> ai_conversations (conversation_id));
 diesel::joinable!(ai_strategy_provenance -> ai_messages (message_id));
 diesel::joinable!(ai_strategy_provenance -> strategies (strategy_id));
@@ -3698,6 +3719,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     ai_conversations,
     ai_feedback,
     ai_messages,
+    ai_recommendation_outcomes,
     ai_strategy_provenance,
     ai_user_profiles,
     audit_logs,

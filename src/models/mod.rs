@@ -2,6 +2,7 @@
 pub mod ai_conversation;
 pub mod ai_feedback;
 pub mod ai_message;
+pub mod ai_recommendation_outcome;
 pub mod ai_strategy_provenance;
 pub mod ai_user_profile;
 
@@ -39,6 +40,7 @@ pub mod strategy_order;
 pub use ai_conversation::{AiConversation, NewAiConversation, UpdateAiConversation};
 pub use ai_feedback::{AiFeedback, NewAiFeedback};
 pub use ai_message::{AiMessage, NewAiMessage};
+pub use ai_recommendation_outcome::{AiRecommendationOutcome, NewAiRecommendationOutcome};
 pub use ai_strategy_provenance::{AiStrategyProvenance, NewAiStrategyProvenance};
 pub use ai_user_profile::{AiUserProfile, NewAiUserProfile, UpdateAiUserProfile};
 
