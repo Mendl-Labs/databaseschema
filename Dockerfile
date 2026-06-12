@@ -4,6 +4,11 @@
 
 FROM rust:slim-bookworm
 
+# Disable HTTP/2 multiplexing and add retries: crates.io downloads in CI
+# intermittently fail with "[16] Error in the HTTP2 framing layer".
+ENV CARGO_HTTP_MULTIPLEXING=false \
+    CARGO_NET_RETRY=10
+
 # Install diesel CLI and PostgreSQL client
 RUN apt-get update && apt-get install -y \
     postgresql-client \
