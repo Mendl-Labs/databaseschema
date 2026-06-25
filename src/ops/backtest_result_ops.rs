@@ -47,7 +47,8 @@ pub async fn create_backtest_result(
                 total_return.eq(excluded(total_return)),
                 updated_at.eq(excluded(updated_at)),
             ))
-            .get_result::<BacktestResult>(&mut connection)
+            .returning(BacktestResult::as_returning())
+            .get_result(&mut connection)
             .await
             .map_err(|e| {
                 let logger = UltraLogger::new("databaseschema".to_string());

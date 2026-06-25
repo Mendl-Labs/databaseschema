@@ -18,6 +18,7 @@ pub async fn insert_trade(
 ) -> Result<TradeRecord, diesel::result::Error> {
     diesel::insert_into(trade_history::table)
         .values(&trade)
+        .returning(TradeRecord::as_returning())
         .get_result(conn)
         .await
 }
@@ -56,7 +57,7 @@ pub async fn get_trades_for_tenant(
         query = query.limit(lim);
     }
 
-    query.load(conn).await
+    query.select(TradeRecord::as_select()).load(conn).await
 }
 
 /// Get trades for a specific deployment
@@ -82,7 +83,7 @@ pub async fn get_trades_for_deployment(
         query = query.limit(lim);
     }
 
-    query.load(conn).await
+    query.select(TradeRecord::as_select()).load(conn).await
 }
 
 /// Get recent trades for a tenant (last N trades)
@@ -95,6 +96,7 @@ pub async fn get_recent_trades(
         .filter(trade_history::tenant_id.eq(tenant_id))
         .order(trade_history::executed_at.desc())
         .limit(limit)
+        .select(TradeRecord::as_select())
         .load(conn)
         .await
 }

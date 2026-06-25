@@ -207,24 +207,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    ai_strategy_provenance (id) {
-        id -> Uuid,
-        strategy_id -> Nullable<Uuid>,
-        conversation_id -> Uuid,
-        message_id -> Nullable<Uuid>,
-        #[max_length = 50]
-        generation_mode -> Varchar,
-        backtest_result_id -> Nullable<Uuid>,
-        backtest_sharpe -> Nullable<Numeric>,
-        backtest_pnl -> Nullable<Numeric>,
-        #[max_length = 20]
-        walk_forward_verdict -> Nullable<Varchar>,
-        feedback_score -> Nullable<Int4>,
-        created_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
     ai_recommendation_outcomes (id) {
         id -> Uuid,
         tenant_id -> Nullable<Uuid>,
@@ -243,15 +225,29 @@ diesel::table! {
 }
 
 diesel::table! {
+    ai_strategy_provenance (id) {
+        id -> Uuid,
+        strategy_id -> Nullable<Uuid>,
+        conversation_id -> Uuid,
+        message_id -> Nullable<Uuid>,
+        #[max_length = 50]
+        generation_mode -> Varchar,
+        backtest_result_id -> Nullable<Uuid>,
+        backtest_sharpe -> Nullable<Numeric>,
+        backtest_pnl -> Nullable<Numeric>,
+        #[max_length = 20]
+        walk_forward_verdict -> Nullable<Varchar>,
+        feedback_score -> Nullable<Int4>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     ai_user_profiles (user_id) {
         #[max_length = 255]
         user_id -> Varchar,
         tenant_id -> Nullable<Uuid>,
         preferred_strategy_types -> Nullable<Jsonb>,
-        #[max_length = 50]
-        preferred_fitness_preset -> Nullable<Varchar>,
-        preferred_exchanges -> Nullable<Jsonb>,
-        preferred_capital_range -> Nullable<Jsonb>,
         common_parameters -> Nullable<Jsonb>,
         style_notes -> Nullable<Text>,
         avg_max_drawdown -> Nullable<Numeric>,
@@ -260,6 +256,10 @@ diesel::table! {
         total_ai_conversations -> Nullable<Int4>,
         auto_derived_at -> Nullable<Timestamptz>,
         updated_at -> Timestamptz,
+        #[max_length = 50]
+        preferred_fitness_preset -> Nullable<Varchar>,
+        preferred_exchanges -> Nullable<Jsonb>,
+        preferred_capital_range -> Nullable<Jsonb>,
     }
 }
 
@@ -332,15 +332,15 @@ diesel::table! {
         last_heartbeat -> Nullable<Timestamptz>,
         current_generation -> Nullable<Int4>,
         total_generations -> Nullable<Int4>,
-        #[max_length = 100]
-        optimization_method -> Varchar,
-        population_size -> Nullable<Int4>,
-        generations -> Nullable<Int4>,
         #[max_length = 50]
         current_phase -> Nullable<Varchar>,
         phase_details -> Nullable<Jsonb>,
         params_json -> Jsonb,
         tenant_id -> Uuid,
+        #[max_length = 100]
+        optimization_method -> Varchar,
+        population_size -> Nullable<Int4>,
+        generations -> Nullable<Int4>,
         priority -> Int4,
         strategy_tags -> Nullable<Jsonb>,
         parent_job_id -> Nullable<Uuid>,
@@ -502,6 +502,7 @@ diesel::table! {
         strategy_instance_id -> Nullable<Uuid>,
         tenant_id -> Uuid,
         python_source_code -> Nullable<Text>,
+        portfolio_id -> Nullable<Uuid>,
     }
 }
 
@@ -763,7 +764,6 @@ diesel::table! {
     }
 }
 
-
 diesel::table! {
     canned_responses (id) {
         id -> Uuid,
@@ -871,30 +871,6 @@ diesel::table! {
         metadata -> Jsonb,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
-    current_balances (id) {
-        id -> Uuid,
-        #[max_length = 50]
-        exchange -> Varchar,
-        #[max_length = 255]
-        user_id -> Varchar,
-        #[max_length = 50]
-        asset -> Varchar,
-        #[max_length = 50]
-        asset_class -> Varchar,
-        #[max_length = 50]
-        wallet_type -> Varchar,
-        #[max_length = 255]
-        wallet_id -> Varchar,
-        balance -> Numeric,
-        available_balance -> Nullable<Numeric>,
-        held_balance -> Nullable<Numeric>,
-        last_sequence -> Nullable<Int8>,
-        last_updated -> Timestamptz,
-        created_at -> Timestamptz,
     }
 }
 
@@ -1092,7 +1068,6 @@ diesel::table! {
         metadata -> Nullable<Jsonb>,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
-        // Diversity preservation columns (added 2026-02-11)
         behavioral_signature -> Nullable<Jsonb>,
         parameter_hash -> Nullable<Int8>,
         current_aum -> Nullable<Numeric>,
@@ -1101,6 +1076,49 @@ diesel::table! {
         cooldown_minutes -> Nullable<Int4>,
         #[max_length = 20]
         status -> Varchar,
+    }
+}
+
+diesel::table! {
+    deployment_positions (deployment_id, exchange, symbol) {
+        deployment_id -> Uuid,
+        tenant_id -> Uuid,
+        #[max_length = 50]
+        exchange -> Varchar,
+        #[max_length = 50]
+        symbol -> Varchar,
+        qty -> Numeric,
+        avg_cost -> Numeric,
+        realized_pnl_total -> Numeric,
+        last_mark_price -> Nullable<Numeric>,
+        last_mark_at -> Nullable<Timestamptz>,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    derivative_instruments (id) {
+        id -> Uuid,
+        #[max_length = 64]
+        symbol -> Varchar,
+        #[max_length = 50]
+        exchange -> Varchar,
+        #[max_length = 32]
+        underlying -> Varchar,
+        #[max_length = 16]
+        instrument_kind -> Varchar,
+        expiry -> Nullable<Timestamptz>,
+        strike -> Nullable<Numeric>,
+        #[max_length = 4]
+        option_type -> Nullable<Varchar>,
+        contract_multiplier -> Numeric,
+        #[max_length = 16]
+        settlement_currency -> Varchar,
+        tick_size -> Nullable<Numeric>,
+        lot_size -> Nullable<Numeric>,
+        is_active -> Bool,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -1306,31 +1324,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    exchange_credentials (id) {
-        id -> Uuid,
-        tenant_id -> Uuid,
-        #[max_length = 50]
-        exchange -> Varchar,
-        #[max_length = 255]
-        label -> Varchar,
-        api_key_encrypted -> Text,
-        api_secret_encrypted -> Text,
-        passphrase_encrypted -> Nullable<Text>,
-        is_testnet -> Bool,
-        is_enabled -> Bool,
-        permissions -> Nullable<Jsonb>,
-        rate_limit_per_second -> Nullable<Int4>,
-        rate_limit_per_minute -> Nullable<Int4>,
-        last_validated_at -> Nullable<Timestamptz>,
-        is_valid -> Nullable<Bool>,
-        validation_error -> Nullable<Text>,
-        created_at -> Timestamptz,
-        updated_at -> Timestamptz,
-        created_by -> Nullable<Uuid>,
-    }
-}
-
-diesel::table! {
     error_activity (id) {
         id -> Uuid,
         fingerprint_id -> Uuid,
@@ -1489,6 +1482,30 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    exchange_credentials (id) {
+        id -> Uuid,
+        tenant_id -> Uuid,
+        #[max_length = 50]
+        exchange -> Varchar,
+        #[max_length = 255]
+        label -> Varchar,
+        api_key_encrypted -> Text,
+        api_secret_encrypted -> Text,
+        passphrase_encrypted -> Nullable<Text>,
+        is_testnet -> Bool,
+        is_enabled -> Bool,
+        permissions -> Nullable<Jsonb>,
+        rate_limit_per_second -> Nullable<Int4>,
+        rate_limit_per_minute -> Nullable<Int4>,
+        last_validated_at -> Nullable<Timestamptz>,
+        is_valid -> Nullable<Bool>,
+        validation_error -> Nullable<Text>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+        created_by -> Nullable<Uuid>,
+    }
+}
 
 diesel::table! {
     export_jobs (id) {
@@ -1731,7 +1748,41 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    historical_orders (timestamp, event_id) {
+        event_id -> Uuid,
+        timestamp -> Timestamptz,
+        order_id -> Text,
+        event_type -> Text,
+        side -> Text,
+        price_level -> Numeric,
+        quantity -> Numeric,
+        prev_price -> Nullable<Numeric>,
+        prev_quantity -> Nullable<Numeric>,
+        status -> Text,
+        exchange -> Text,
+        symbol -> Text,
+        exchange_id -> Nullable<Uuid>,
+        security_id -> Nullable<Uuid>,
+    }
+}
 
+diesel::table! {
+    historical_snapshot (timestamp, event_id) {
+        event_id -> Uuid,
+        timestamp -> Timestamptz,
+        order_id -> Text,
+        event_type -> Text,
+        side -> Text,
+        price_level -> Numeric,
+        quantity -> Numeric,
+        status -> Text,
+        exchange -> Text,
+        symbol -> Text,
+        exchange_id -> Nullable<Uuid>,
+        security_id -> Nullable<Uuid>,
+    }
+}
 
 diesel::table! {
     use diesel::sql_types::*;
@@ -1968,6 +2019,17 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    kill_switch_events (id) {
+        id -> Uuid,
+        tenant_id -> Uuid,
+        event_type -> Text,
+        reason -> Text,
+        triggered_at -> Timestamptz,
+        reset_at -> Nullable<Timestamptz>,
+        notes -> Nullable<Text>,
+    }
+}
 
 diesel::table! {
     maintenance_components (id) {
@@ -2002,6 +2064,21 @@ diesel::table! {
 }
 
 diesel::table! {
+    market_data_health (tenant_id, exchange, symbol) {
+        tenant_id -> Uuid,
+        #[max_length = 50]
+        exchange -> Varchar,
+        #[max_length = 50]
+        symbol -> Varchar,
+        last_tick_at -> Nullable<Timestamptz>,
+        last_orderbook_at -> Nullable<Timestamptz>,
+        ticks_per_sec -> Float8,
+        gap_count_5m -> Int4,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     notification_preferences (id) {
         id -> Uuid,
         tenant_id -> Uuid,
@@ -2023,15 +2100,13 @@ diesel::table! {
         quiet_hours_end -> Nullable<Time>,
         #[max_length = 50]
         timezone -> Nullable<Varchar>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
         telegram_enabled -> Bool,
         #[max_length = 100]
         telegram_chat_id -> Nullable<Varchar>,
-        created_at -> Timestamptz,
-        updated_at -> Timestamptz,
     }
 }
-
-
 
 diesel::table! {
     optimization_iterations (id) {
@@ -2079,6 +2154,27 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    option_greeks_snapshots (id, snapshot_time) {
+        id -> Uuid,
+        #[max_length = 64]
+        symbol -> Varchar,
+        #[max_length = 50]
+        exchange -> Varchar,
+        snapshot_time -> Timestamptz,
+        underlying_price -> Numeric,
+        mark_price -> Nullable<Numeric>,
+        implied_vol -> Nullable<Numeric>,
+        delta -> Nullable<Numeric>,
+        gamma -> Nullable<Numeric>,
+        theta -> Nullable<Numeric>,
+        vega -> Nullable<Numeric>,
+        rho -> Nullable<Numeric>,
+        open_interest -> Nullable<Numeric>,
+        volume_24h -> Nullable<Numeric>,
+        metadata -> Nullable<Jsonb>,
+    }
+}
 
 diesel::table! {
     pitr_checkpoints (id) {
@@ -2097,6 +2193,68 @@ diesel::table! {
         expires_at -> Nullable<Timestamptz>,
         metadata -> Jsonb,
         created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    pnl_snapshots (snapshot_at, tenant_id, mode) {
+        id -> Uuid,
+        tenant_id -> Uuid,
+        snapshot_at -> Timestamptz,
+        total_pnl -> Numeric,
+        realized_pnl -> Numeric,
+        unrealized_pnl -> Numeric,
+        daily_pnl -> Numeric,
+        total_capital -> Nullable<Numeric>,
+        total_equity -> Nullable<Numeric>,
+        by_exchange -> Jsonb,
+        by_deployment -> Nullable<Jsonb>,
+        trades_count -> Int4,
+        winning_trades -> Int4,
+        losing_trades -> Int4,
+        max_drawdown -> Nullable<Numeric>,
+        sharpe_estimate -> Nullable<Numeric>,
+        created_at -> Timestamptz,
+        mode -> Text,
+    }
+}
+
+diesel::table! {
+    portfolio_assets (id) {
+        id -> Uuid,
+        portfolio_id -> Uuid,
+        #[max_length = 50]
+        symbol -> Varchar,
+        #[max_length = 50]
+        exchange -> Varchar,
+        #[max_length = 20]
+        asset_class -> Varchar,
+        target_weight -> Numeric,
+        #[max_length = 255]
+        strategy_name -> Nullable<Varchar>,
+        #[max_length = 50]
+        strategy_type -> Varchar,
+        python_source_code -> Text,
+        max_position_pct -> Nullable<Numeric>,
+        sort_order -> Int4,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    portfolios (id) {
+        id -> Uuid,
+        tenant_id -> Uuid,
+        #[max_length = 255]
+        name -> Varchar,
+        description -> Nullable<Text>,
+        #[max_length = 50]
+        rebalance_strategy -> Varchar,
+        rebalance_threshold -> Nullable<Numeric>,
+        #[max_length = 20]
+        rebalance_frequency -> Nullable<Varchar>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
     }
 }
 
@@ -2389,7 +2547,6 @@ diesel::table! {
     }
 }
 
-
 diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::ServiceType;
@@ -2418,9 +2575,6 @@ diesel::table! {
         updated_at -> Timestamptz,
     }
 }
-
-
-
 
 diesel::table! {
     source_maps (id) {
@@ -2849,6 +3003,15 @@ diesel::table! {
         #[max_length = 255]
         created_by -> Nullable<Varchar>,
         updated_at -> Timestamptz,
+        derivative_instrument_id -> Nullable<Uuid>,
+        expiry -> Nullable<Timestamptz>,
+        strike -> Nullable<Numeric>,
+        #[max_length = 4]
+        option_type -> Nullable<Varchar>,
+        contract_multiplier -> Nullable<Numeric>,
+        leg_group_id -> Nullable<Uuid>,
+        leg_index -> Nullable<Int4>,
+        leg_ratio -> Nullable<Int4>,
     }
 }
 
@@ -3205,6 +3368,48 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    trade_history (executed_at, id) {
+        id -> Uuid,
+        tenant_id -> Uuid,
+        deployment_id -> Uuid,
+        #[max_length = 50]
+        exchange -> Varchar,
+        #[max_length = 50]
+        symbol -> Varchar,
+        #[max_length = 10]
+        side -> Varchar,
+        #[max_length = 20]
+        order_type -> Varchar,
+        price -> Numeric,
+        quantity -> Numeric,
+        quote_quantity -> Nullable<Numeric>,
+        fee -> Nullable<Numeric>,
+        #[max_length = 10]
+        fee_currency -> Nullable<Varchar>,
+        #[max_length = 255]
+        exchange_order_id -> Varchar,
+        #[max_length = 255]
+        exchange_trade_id -> Varchar,
+        realized_pnl -> Nullable<Numeric>,
+        #[max_length = 10]
+        position_side -> Nullable<Varchar>,
+        position_size -> Nullable<Numeric>,
+        avg_entry_price -> Nullable<Numeric>,
+        executed_at -> Timestamptz,
+        created_at -> Timestamptz,
+        metadata -> Nullable<Jsonb>,
+        #[max_length = 50]
+        quote_currency -> Varchar,
+        value -> Numeric,
+        commission -> Numeric,
+        #[max_length = 50]
+        commission_asset -> Varchar,
+        recorded_at -> Timestamptz,
+        signal_price -> Nullable<Numeric>,
+        signal_at -> Nullable<Timestamptz>,
+    }
+}
 
 diesel::table! {
     uptime_records (id, period_start) {
@@ -3342,30 +3547,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    users (id) {
-        id -> Uuid,
-        tenant_id -> Uuid,
-        #[max_length = 255]
-        email -> Varchar,
-        #[max_length = 255]
-        password_hash -> Nullable<Varchar>,
-        #[max_length = 255]
-        full_name -> Nullable<Varchar>,
-        #[max_length = 50]
-        role -> Varchar,
-        is_verified -> Bool,
-        #[max_length = 255]
-        verification_token -> Nullable<Varchar>,
-        #[max_length = 255]
-        reset_token -> Nullable<Varchar>,
-        reset_token_expires_at -> Nullable<Timestamptz>,
-        last_login_at -> Nullable<Timestamptz>,
-        created_at -> Timestamptz,
-        updated_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
     user_preferences (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -3395,6 +3576,29 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    users (id) {
+        id -> Uuid,
+        tenant_id -> Uuid,
+        #[max_length = 255]
+        email -> Varchar,
+        #[max_length = 255]
+        password_hash -> Nullable<Varchar>,
+        #[max_length = 255]
+        full_name -> Nullable<Varchar>,
+        #[max_length = 50]
+        role -> Varchar,
+        is_verified -> Bool,
+        #[max_length = 255]
+        verification_token -> Nullable<Varchar>,
+        #[max_length = 255]
+        reset_token -> Nullable<Varchar>,
+        reset_token_expires_at -> Nullable<Timestamptz>,
+        last_login_at -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
 
 diesel::table! {
     webhook_deliveries (id) {
@@ -3439,109 +3643,15 @@ diesel::table! {
     }
 }
 
-// Live trading tables
-diesel::table! {
-    trade_history (id) {
-        id -> Uuid,
-        tenant_id -> Uuid,
-        deployment_id -> Uuid,
-        #[max_length = 50]
-        exchange -> Varchar,
-        #[max_length = 50]
-        symbol -> Varchar,
-        #[max_length = 10]
-        side -> Varchar,
-        quantity -> Numeric,
-        price -> Numeric,
-        #[max_length = 50]
-        quote_currency -> Varchar,
-        value -> Numeric,
-        commission -> Numeric,
-        #[max_length = 50]
-        commission_asset -> Varchar,
-        realized_pnl -> Nullable<Numeric>,
-        #[max_length = 255]
-        exchange_trade_id -> Varchar,
-        #[max_length = 255]
-        exchange_order_id -> Varchar,
-        executed_at -> Timestamptz,
-        recorded_at -> Timestamptz,
-        signal_price -> Nullable<Numeric>,
-        signal_at -> Nullable<Timestamptz>,
-    }
-}
-
-diesel::table! {
-    market_data_health (tenant_id, exchange, symbol) {
-        tenant_id -> Uuid,
-        #[max_length = 50]
-        exchange -> Varchar,
-        #[max_length = 50]
-        symbol -> Varchar,
-        last_tick_at -> Nullable<Timestamptz>,
-        last_orderbook_at -> Nullable<Timestamptz>,
-        ticks_per_sec -> Double,
-        gap_count_5m -> Int4,
-        updated_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
-    deployment_positions (deployment_id, exchange, symbol) {
-        deployment_id -> Uuid,
-        tenant_id -> Uuid,
-        #[max_length = 50]
-        exchange -> Varchar,
-        #[max_length = 50]
-        symbol -> Varchar,
-        qty -> Numeric,
-        avg_cost -> Numeric,
-        realized_pnl_total -> Numeric,
-        last_mark_price -> Nullable<Numeric>,
-        last_mark_at -> Nullable<Timestamptz>,
-        updated_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
-    pnl_snapshots (snapshot_at, tenant_id, mode) {
-        id -> Uuid,
-        tenant_id -> Uuid,
-        snapshot_at -> Timestamptz,
-        total_pnl -> Numeric,
-        realized_pnl -> Numeric,
-        unrealized_pnl -> Numeric,
-        daily_pnl -> Numeric,
-        total_capital -> Numeric,
-        total_equity -> Numeric,
-        by_exchange -> Jsonb,
-        by_deployment -> Jsonb,
-        trades_count -> Int4,
-        winning_trades -> Int4,
-        losing_trades -> Int4,
-        created_at -> Timestamptz,
-        mode -> Text,
-    }
-}
-
-diesel::table! {
-    kill_switch_events (id) {
-        id -> Uuid,
-        tenant_id -> Uuid,
-        event_type -> Text,
-        reason -> Text,
-        triggered_at -> Timestamptz,
-        reset_at -> Nullable<Timestamptz>,
-        notes -> Nullable<Text>,
-    }
-}
-
 diesel::table! {
     workflow_runs (id) {
         id -> Uuid,
         tenant_id -> Uuid,
+        #[max_length = 50]
         workflow_type -> Varchar,
+        #[max_length = 20]
         status -> Varchar,
+        #[max_length = 255]
         title -> Nullable<Varchar>,
         config -> Jsonb,
         result_summary -> Nullable<Jsonb>,
@@ -3561,7 +3671,9 @@ diesel::table! {
         id -> Uuid,
         run_id -> Uuid,
         step_number -> Int4,
+        #[max_length = 50]
         step_type -> Varchar,
+        #[max_length = 20]
         status -> Varchar,
         input -> Jsonb,
         output -> Nullable<Jsonb>,
@@ -3571,19 +3683,19 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(ai_conversations -> tenants (tenant_id));
-diesel::joinable!(ai_conversations -> strategies (strategy_id));
 diesel::joinable!(ai_conversations -> backtest_jobs (job_id));
-diesel::joinable!(ai_feedback -> ai_messages (message_id));
+diesel::joinable!(ai_conversations -> strategies (strategy_id));
+diesel::joinable!(ai_conversations -> tenants (tenant_id));
 diesel::joinable!(ai_feedback -> ai_conversations (conversation_id));
+diesel::joinable!(ai_feedback -> ai_messages (message_id));
 diesel::joinable!(ai_messages -> ai_conversations (conversation_id));
-diesel::joinable!(ai_recommendation_outcomes -> tenants (tenant_id));
 diesel::joinable!(ai_recommendation_outcomes -> ai_conversations (conversation_id));
 diesel::joinable!(ai_recommendation_outcomes -> backtest_jobs (from_job_id));
+diesel::joinable!(ai_recommendation_outcomes -> tenants (tenant_id));
 diesel::joinable!(ai_strategy_provenance -> ai_conversations (conversation_id));
 diesel::joinable!(ai_strategy_provenance -> ai_messages (message_id));
-diesel::joinable!(ai_strategy_provenance -> strategies (strategy_id));
 diesel::joinable!(ai_strategy_provenance -> backtest_results (backtest_result_id));
+diesel::joinable!(ai_strategy_provenance -> strategies (strategy_id));
 diesel::joinable!(ai_user_profiles -> tenants (tenant_id));
 diesel::joinable!(audit_logs -> tenants (tenant_id));
 diesel::joinable!(audit_logs -> users (user_id));
@@ -3594,6 +3706,7 @@ diesel::joinable!(backtest_jobs -> tenants (tenant_id));
 diesel::joinable!(backtest_position_history -> backtest_results (backtest_result_id));
 diesel::joinable!(backtest_report_access_log -> backtest_reports (report_id));
 diesel::joinable!(backtest_reports -> backtest_results (backtest_result_id));
+diesel::joinable!(backtest_results -> portfolios (portfolio_id));
 diesel::joinable!(backtest_results -> strategy_instances (strategy_instance_id));
 diesel::joinable!(backtest_results -> tenants (tenant_id));
 diesel::joinable!(backtest_trades -> backtest_results (backtest_result_id));
@@ -3618,13 +3731,12 @@ diesel::joinable!(data_retention_schedules -> tenants (tenant_id));
 diesel::joinable!(data_subject_requests -> tenants (tenant_id));
 diesel::joinable!(deployed_strategies -> backtest_results (backtest_result_id));
 diesel::joinable!(deployed_strategies -> tenants (tenant_id));
+diesel::joinable!(deployment_positions -> deployed_strategies (deployment_id));
 diesel::joinable!(domain_dns_records -> custom_domains (domain_id));
 diesel::joinable!(domain_ssl_certificates -> custom_domains (domain_id));
 diesel::joinable!(domain_verification_attempts -> custom_domains (domain_id));
 diesel::joinable!(email_notifications -> tenants (tenant_id));
 diesel::joinable!(email_templates -> tenants (tenant_id));
-diesel::joinable!(exchange_credentials -> tenants (tenant_id));
-diesel::joinable!(exchange_credentials -> users (created_by));
 diesel::joinable!(error_activity -> error_fingerprints (fingerprint_id));
 diesel::joinable!(error_alert_rules -> tenants (tenant_id));
 diesel::joinable!(error_comments -> error_fingerprints (fingerprint_id));
@@ -3633,6 +3745,8 @@ diesel::joinable!(error_occurrences -> error_fingerprints (fingerprint_id));
 diesel::joinable!(error_occurrences -> tenants (tenant_id));
 diesel::joinable!(error_stats_hourly -> error_fingerprints (fingerprint_id));
 diesel::joinable!(error_stats_hourly -> tenants (tenant_id));
+diesel::joinable!(exchange_credentials -> tenants (tenant_id));
+diesel::joinable!(exchange_credentials -> users (created_by));
 diesel::joinable!(export_jobs -> tenants (tenant_id));
 diesel::joinable!(export_quotas -> tenants (tenant_id));
 diesel::joinable!(export_stats -> tenants (tenant_id));
@@ -3657,6 +3771,9 @@ diesel::joinable!(optimization_iterations -> optimization_runs (optimization_run
 diesel::joinable!(optimization_runs -> strategies (strategy_id));
 diesel::joinable!(pitr_checkpoints -> backups (backup_id));
 diesel::joinable!(pitr_checkpoints -> tenants (tenant_id));
+diesel::joinable!(pnl_snapshots -> tenants (tenant_id));
+diesel::joinable!(portfolio_assets -> portfolios (portfolio_id));
+diesel::joinable!(portfolios -> tenants (tenant_id));
 diesel::joinable!(privacy_settings -> tenants (tenant_id));
 diesel::joinable!(processing_activities -> tenants (tenant_id));
 diesel::joinable!(restore_jobs -> backups (backup_id));
@@ -3686,6 +3803,7 @@ diesel::joinable!(strategy_approval_history -> strategies (strategy_id));
 diesel::joinable!(strategy_approval_history -> strategy_instances (instance_id));
 diesel::joinable!(strategy_instances -> strategies (strategy_id));
 diesel::joinable!(strategy_instances -> tenants (tenant_id));
+diesel::joinable!(strategy_orders -> derivative_instruments (derivative_instrument_id));
 diesel::joinable!(strategy_parameters -> strategies (strategy_id));
 diesel::joinable!(support_tickets -> tenants (tenant_id));
 diesel::joinable!(support_tickets -> ticket_categories (category_id));
@@ -3701,6 +3819,8 @@ diesel::joinable!(ticket_categories -> tenants (tenant_id));
 diesel::joinable!(ticket_messages -> support_tickets (ticket_id));
 diesel::joinable!(ticket_sla_policies -> tenants (tenant_id));
 diesel::joinable!(ticket_watchers -> support_tickets (ticket_id));
+diesel::joinable!(trade_history -> deployed_strategies (deployment_id));
+diesel::joinable!(trade_history -> tenants (tenant_id));
 diesel::joinable!(usage_daily_aggregates -> tenants (tenant_id));
 diesel::joinable!(usage_monthly_summary -> tenants (tenant_id));
 diesel::joinable!(user_data_inventory -> consent_records (consent_record_id));
@@ -3713,7 +3833,6 @@ diesel::joinable!(webhook_deliveries -> webhook_endpoints (endpoint_id));
 diesel::joinable!(webhook_endpoints -> tenants (tenant_id));
 diesel::joinable!(workflow_runs -> tenants (tenant_id));
 diesel::joinable!(workflow_steps -> workflow_runs (run_id));
-diesel::joinable!(deployment_positions -> deployed_strategies (deployment_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     ai_conversations,
@@ -3744,7 +3863,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     component_uptime_daily,
     consent_history,
     consent_records,
-    current_balances,
     custom_domains,
     data_breaches,
     data_cache_status,
@@ -3752,6 +3870,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     data_subject_requests,
     deployed_strategies,
     deployment_positions,
+    derivative_instruments,
     domain_audit_log,
     domain_dns_records,
     domain_ssl_certificates,
@@ -3776,6 +3895,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     health_check_results,
     health_checks,
     health_incidents,
+    historical_orders,
+    historical_snapshot,
     identity_providers,
     incident_components,
     incident_updates,
@@ -3793,8 +3914,11 @@ diesel::allow_tables_to_appear_in_same_query!(
     notification_preferences,
     optimization_iterations,
     optimization_runs,
+    option_greeks_snapshots,
     pitr_checkpoints,
     pnl_snapshots,
+    portfolio_assets,
+    portfolios,
     privacy_settings,
     processing_activities,
     restore_jobs,

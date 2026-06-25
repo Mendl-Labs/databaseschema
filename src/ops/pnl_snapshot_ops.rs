@@ -18,6 +18,7 @@ pub async fn insert_snapshot(
 ) -> Result<PnLSnapshot, diesel::result::Error> {
     diesel::insert_into(pnl_snapshots::table)
         .values(&snapshot)
+        .returning(PnLSnapshot::as_returning())
         .get_result(conn)
         .await
 }
@@ -49,6 +50,7 @@ pub async fn upsert_snapshot(
             pnl_snapshots::winning_trades.eq(&snapshot.winning_trades),
             pnl_snapshots::losing_trades.eq(&snapshot.losing_trades),
         ))
+        .returning(PnLSnapshot::as_returning())
         .get_result(conn)
         .await
 }
@@ -65,6 +67,7 @@ pub async fn get_snapshots(
         .filter(pnl_snapshots::snapshot_at.ge(start))
         .filter(pnl_snapshots::snapshot_at.lt(end))
         .order(pnl_snapshots::snapshot_at.asc())
+        .select(PnLSnapshot::as_select())
         .load(conn)
         .await
 }
@@ -77,6 +80,7 @@ pub async fn get_latest_snapshot(
     pnl_snapshots::table
         .filter(pnl_snapshots::tenant_id.eq(tenant_id))
         .order(pnl_snapshots::snapshot_at.desc())
+        .select(PnLSnapshot::as_select())
         .first(conn)
         .await
         .optional()
@@ -103,6 +107,7 @@ pub async fn get_chart_data(
         .filter(pnl_snapshots::tenant_id.eq(tenant_id))
         .filter(pnl_snapshots::snapshot_at.ge(start))
         .order(pnl_snapshots::snapshot_at.asc())
+        .select(PnLSnapshot::as_select())
         .load(conn)
         .await
 }

@@ -31,6 +31,7 @@ impl StrategyOrderOps {
 
         let inserted_order = diesel::insert_into(schema::strategy_orders::table)
             .values(&order)
+            .returning(StrategyOrder::as_returning())
             .get_result(conn)
             .await
             .map_err(|_| {
@@ -143,6 +144,7 @@ impl StrategyOrderOps {
                 schema::strategy_orders::status.eq(new_status),
                 schema::strategy_orders::updated_at.eq(Utc::now()),
             ))
+            .returning(StrategyOrder::as_returning())
             .get_result(conn)
             .await
             .map_err(|_| {
@@ -169,6 +171,7 @@ impl StrategyOrderOps {
                 schema::strategy_orders::completed_at.eq(Some(Utc::now())),
                 schema::strategy_orders::updated_at.eq(Utc::now()),
             ))
+            .returning(StrategyOrder::as_returning())
             .get_result(conn)
             .await
             .map_err(|_| {
@@ -199,6 +202,7 @@ impl StrategyOrderFillOps {
         
         let inserted_fill = diesel::insert_into(schema::strategy_order_fills::table)
             .values(&fill)
+            .returning(StrategyOrderFill::as_returning())
             .get_result(conn)
             .await
             .map_err(|_| {
@@ -217,6 +221,7 @@ impl StrategyOrderFillOps {
             .filter(schema::strategy_order_fills::order_id.eq(order_id))
             .order(schema::strategy_order_fills::fill_timestamp.asc())
             .limit(1000) // Prevent memory exhaustion
+            .select(StrategyOrderFill::as_select())
             .load::<StrategyOrderFill>(conn)
             .await
             .map_err(|_| {
@@ -238,6 +243,7 @@ impl StrategyOrderStateChangeOps {
     ) -> Result<StrategyOrderStateChange> {
         let inserted_change = diesel::insert_into(schema::strategy_order_state_changes::table)
             .values(&state_change)
+            .returning(StrategyOrderStateChange::as_returning())
             .get_result(conn)
             .await
             .map_err(|_| {
@@ -256,6 +262,7 @@ impl StrategyOrderStateChangeOps {
             .filter(schema::strategy_order_state_changes::order_id.eq(order_id))
             .order(schema::strategy_order_state_changes::changed_at.asc())
             .limit(1000) // Prevent memory exhaustion
+            .select(StrategyOrderStateChange::as_select())
             .load::<StrategyOrderStateChange>(conn)
             .await
             .map_err(|_| {
