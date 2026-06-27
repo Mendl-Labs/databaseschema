@@ -348,6 +348,7 @@ diesel::table! {
         code_hash -> Nullable<Text>,
         params_hash -> Nullable<Text>,
         hypothesis -> Nullable<Text>,
+        archived_at -> Nullable<Timestamptz>,
     }
 }
 
