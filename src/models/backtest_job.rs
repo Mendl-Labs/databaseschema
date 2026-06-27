@@ -56,6 +56,8 @@ pub struct BacktestJobRecord {
     pub params_hash: Option<String>,
     /// User-supplied one-liner about what they expect from this run.
     pub hypothesis: Option<String>,
+    /// When set, the job is soft-deleted and hidden from all list queries.
+    pub archived_at: Option<DateTime<Utc>>,
 }
 
 /// Insertable record for new backtest jobs
