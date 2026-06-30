@@ -20,6 +20,16 @@ pub enum Exchange {
     Okx,
     Gemini,
     Bitstamp,
+    /// Alpaca Markets — US equities and crypto, REST + SSE streams.
+    /// api_key = API Key ID, api_secret = API Secret Key.
+    /// Supports paper environment (paper-api.alpaca.markets).
+    Alpaca,
+    /// Oanda v20 — FX and CFDs.
+    /// api_key = personal access token, passphrase = account ID (e.g. 001-001-1234567-001).
+    Oanda,
+    /// Oanda practice account (fxTrade Practice).
+    /// Same auth fields as Oanda live.
+    OandaPractice,
 }
 
 impl Exchange {
@@ -33,17 +43,20 @@ impl Exchange {
             Exchange::Okx => "okx",
             Exchange::Gemini => "gemini",
             Exchange::Bitstamp => "bitstamp",
+            Exchange::Alpaca => "alpaca",
+            Exchange::Oanda => "oanda",
+            Exchange::OandaPractice => "oanda_practice",
         }
     }
 
     pub fn requires_passphrase(&self) -> bool {
-        matches!(self, Exchange::Coinbase | Exchange::Okx)
+        matches!(self, Exchange::Coinbase | Exchange::Okx | Exchange::Oanda | Exchange::OandaPractice)
     }
 
     pub fn supports_testnet(&self) -> bool {
         matches!(
             self,
-            Exchange::Binance | Exchange::Coinbase | Exchange::Bybit | Exchange::Okx | Exchange::Gemini
+            Exchange::Binance | Exchange::Coinbase | Exchange::Bybit | Exchange::Okx | Exchange::Gemini | Exchange::Alpaca
         )
     }
 }
@@ -61,6 +74,9 @@ impl std::str::FromStr for Exchange {
             "okx" => Ok(Exchange::Okx),
             "gemini" => Ok(Exchange::Gemini),
             "bitstamp" => Ok(Exchange::Bitstamp),
+            "alpaca" => Ok(Exchange::Alpaca),
+            "oanda" => Ok(Exchange::Oanda),
+            "oanda_practice" => Ok(Exchange::OandaPractice),
             _ => Err(format!("Unknown exchange: {}", s)),
         }
     }
@@ -107,7 +123,7 @@ impl ExchangeCredential {
 
     /// Check if this credential requires a passphrase
     pub fn requires_passphrase(&self) -> bool {
-        matches!(self.exchange.as_str(), "coinbase" | "okx")
+        matches!(self.exchange.as_str(), "coinbase" | "okx" | "oanda" | "oanda_practice")
     }
 
     /// Mask the API key for display (first 4 and last 4 chars)
