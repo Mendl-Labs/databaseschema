@@ -51,6 +51,26 @@ pub async fn get_active_deployments(
         .await
 }
 
+/// Stamp the market-data heartbeat (`last_data_at`) for a batch of
+/// deployments. Called by SignalEngine's market-health writer (~30s cadence)
+/// for every active deployment whose symbol received data in the freshness
+/// window — the signal behind the dashboard's per-deployment feed badge.
+pub async fn stamp_last_data_at(
+    conn: &mut AsyncPgConnection,
+    deployment_ids: &[Uuid],
+    at: DateTime<Utc>,
+) -> Result<usize, diesel::result::Error> {
+    if deployment_ids.is_empty() {
+        return Ok(0);
+    }
+    diesel::update(
+        deployed_strategies::table.filter(deployed_strategies::id.eq_any(deployment_ids)),
+    )
+    .set(deployed_strategies::last_data_at.eq(Some(at)))
+    .execute(conn)
+    .await
+}
+
 /// Increment trade count and update P&L for a deployment (atomic update).
 /// Uses SQL expressions to avoid race conditions between concurrent fills.
 pub async fn increment_trade_and_pnl(
