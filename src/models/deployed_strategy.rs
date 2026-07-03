@@ -46,6 +46,9 @@ pub struct DeployedStrategy {
     pub cooldown_minutes: Option<i32>,
     /// Explicit status: "active", "paused", or "stopped"
     pub status: String,
+    /// Market-data heartbeat: when SignalEngine last saw fresh market data for
+    /// this deployment (stamped ~30s by the heartbeat task). NULL = never/unknown.
+    pub last_data_at: Option<DateTime<Utc>>,
 }
 
 /// New deployed strategy for insertion

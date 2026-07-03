@@ -1077,6 +1077,7 @@ diesel::table! {
         cooldown_minutes -> Nullable<Int4>,
         #[max_length = 20]
         status -> Varchar,
+        last_data_at -> Nullable<Timestamptz>,
     }
 }
 
