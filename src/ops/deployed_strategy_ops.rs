@@ -71,6 +71,20 @@ pub async fn stamp_last_data_at(
     .await
 }
 
+/// Stamp `last_signal_at` for a deployment. Called by SignalEngine's
+/// market-health writer flushing the in-memory bridge emission map — the
+/// write path behind the dashboard's "Last signal" recency indicator.
+pub async fn stamp_last_signal_at(
+    conn: &mut AsyncPgConnection,
+    deployment_id: Uuid,
+    at: DateTime<Utc>,
+) -> Result<usize, diesel::result::Error> {
+    diesel::update(deployed_strategies::table.find(deployment_id))
+        .set(deployed_strategies::last_signal_at.eq(Some(at)))
+        .execute(conn)
+        .await
+}
+
 /// Increment trade count and update P&L for a deployment (atomic update).
 /// Uses SQL expressions to avoid race conditions between concurrent fills.
 pub async fn increment_trade_and_pnl(
