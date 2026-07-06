@@ -264,6 +264,25 @@ diesel::table! {
 }
 
 diesel::table! {
+    api_keys (id) {
+        id -> Uuid,
+        tenant_id -> Uuid,
+        #[max_length = 255]
+        user_id -> Varchar,
+        #[max_length = 50]
+        name -> Varchar,
+        #[max_length = 20]
+        prefix -> Varchar,
+        #[max_length = 64]
+        key_hash -> Varchar,
+        created_at -> Timestamptz,
+        last_used_at -> Nullable<Timestamptz>,
+        expires_at -> Nullable<Timestamptz>,
+        revoked_at -> Nullable<Timestamptz>,
+    }
+}
+
+diesel::table! {
     audit_logs (id) {
         id -> Uuid,
         tenant_id -> Uuid,
@@ -3549,6 +3568,26 @@ diesel::table! {
 }
 
 diesel::table! {
+    user_display_preferences (user_id) {
+        #[max_length = 255]
+        user_id -> Varchar,
+        tenant_id -> Nullable<Uuid>,
+        sidebar_collapsed -> Bool,
+        table_page_size -> Int4,
+        #[max_length = 20]
+        chart_theme -> Varchar,
+        show_advanced_options -> Bool,
+        #[max_length = 50]
+        default_optimization_method -> Varchar,
+        #[max_length = 10]
+        default_data_resolution -> Nullable<Varchar>,
+        favorite_symbols -> Jsonb,
+        quote_currencies -> Jsonb,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     user_preferences (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -3843,6 +3882,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     ai_recommendation_outcomes,
     ai_strategy_provenance,
     ai_user_profiles,
+    api_keys,
     audit_logs,
     backtest_drawdown_periods,
     backtest_equity_curve,
@@ -3965,6 +4005,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     usage_events,
     usage_monthly_summary,
     user_data_inventory,
+    user_display_preferences,
     user_preferences,
     users,
     webhook_deliveries,
