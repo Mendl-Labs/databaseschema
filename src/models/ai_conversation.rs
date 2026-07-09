@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use uuid::Uuid;
 
 /// Queryable record for ai_conversations table
@@ -19,6 +20,12 @@ pub struct AiConversation {
     pub total_tokens: i32,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    /// Server-tracked, cumulative snapshot of which research-interview slots have
+    /// been filled so far (plus a reserved `_meta` key for enrichment data --
+    /// verified asset availability, diagnostics-derived suggestions). NULL for
+    /// conversations that never went through the research-interview surface, or
+    /// haven't had a turn parsed yet.
+    pub interview_slots: Option<Value>,
 }
 
 /// Insertable record for ai_conversations table

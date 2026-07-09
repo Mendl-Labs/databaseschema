@@ -170,6 +170,7 @@ diesel::table! {
         total_tokens -> Int4,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
+        interview_slots -> Nullable<Jsonb>,
     }
 }
 
