@@ -16,6 +16,7 @@ pub struct AiRecommendationOutcome {
     pub proposal_mode: Option<String>,
     pub user_id: Option<String>,
     pub created_at: DateTime<Utc>,
+    pub category: Option<String>,
 }
 
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
@@ -28,4 +29,5 @@ pub struct NewAiRecommendationOutcome {
     pub from_job_id: Option<Uuid>,
     pub proposal_mode: Option<String>,
     pub user_id: Option<String>,
+    pub category: Option<String>,
 }
