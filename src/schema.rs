@@ -222,6 +222,8 @@ diesel::table! {
         #[max_length = 255]
         user_id -> Nullable<Varchar>,
         created_at -> Timestamptz,
+        #[max_length = 30]
+        category -> Nullable<Varchar>,
     }
 }
 
