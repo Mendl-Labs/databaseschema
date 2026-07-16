@@ -85,6 +85,22 @@ pub async fn stamp_last_signal_at(
         .await
 }
 
+/// Stamp `bars_accumulated` for a deployment. Called by SignalEngine's
+/// market-health writer flushing the in-memory bar-count map -- the write
+/// path behind the dashboard's "still warming up" indicator, since a
+/// strategy's bar history lives only in the Python worker's in-memory state
+/// and is wiped on every SignalEngine restart.
+pub async fn stamp_bars_accumulated(
+    conn: &mut AsyncPgConnection,
+    deployment_id: Uuid,
+    bars: i32,
+) -> Result<usize, diesel::result::Error> {
+    diesel::update(deployed_strategies::table.find(deployment_id))
+        .set(deployed_strategies::bars_accumulated.eq(Some(bars)))
+        .execute(conn)
+        .await
+}
+
 /// Increment trade count and update P&L for a deployment (atomic update).
 /// Uses SQL expressions to avoid race conditions between concurrent fills.
 pub async fn increment_trade_and_pnl(
