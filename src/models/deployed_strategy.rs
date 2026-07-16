@@ -49,6 +49,11 @@ pub struct DeployedStrategy {
     /// Market-data heartbeat: when SignalEngine last saw fresh market data for
     /// this deployment (stamped ~30s by the heartbeat task). NULL = never/unknown.
     pub last_data_at: Option<DateTime<Utc>>,
+    /// How many bars the strategy has accumulated since its last
+    /// (re)initialization -- bar history lives only in the Python worker's
+    /// in-memory state and is wiped on every SignalEngine restart. NULL =
+    /// never tracked (pre-migration row, or not yet flushed once).
+    pub bars_accumulated: Option<i32>,
 }
 
 /// New deployed strategy for insertion

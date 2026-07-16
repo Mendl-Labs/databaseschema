@@ -1100,6 +1100,7 @@ diesel::table! {
         #[max_length = 20]
         status -> Varchar,
         last_data_at -> Nullable<Timestamptz>,
+        bars_accumulated -> Nullable<Int4>,
     }
 }
 
