@@ -25,6 +25,7 @@ pub struct AiUserProfile {
     pub total_ai_conversations: Option<i32>,
     pub auto_derived_at: Option<DateTime<Utc>>,
     pub updated_at: DateTime<Utc>,
+    pub preferred_experience_level: Option<String>,
 }
 
 /// Insertable record for ai_user_profiles table
@@ -39,6 +40,7 @@ pub struct NewAiUserProfile {
     pub preferred_capital_range: Option<serde_json::Value>,
     pub common_parameters: Option<serde_json::Value>,
     pub style_notes: Option<String>,
+    pub preferred_experience_level: Option<String>,
 }
 
 /// Changeset for updating ai_user_profiles
@@ -57,4 +59,5 @@ pub struct UpdateAiUserProfile {
     pub total_ai_conversations: Option<i32>,
     pub auto_derived_at: Option<DateTime<Utc>>,
     pub updated_at: Option<DateTime<Utc>>,
+    pub preferred_experience_level: Option<String>,
 }

@@ -263,6 +263,8 @@ diesel::table! {
         preferred_fitness_preset -> Nullable<Varchar>,
         preferred_exchanges -> Nullable<Jsonb>,
         preferred_capital_range -> Nullable<Jsonb>,
+        #[max_length = 20]
+        preferred_experience_level -> Nullable<Varchar>,
     }
 }
 
