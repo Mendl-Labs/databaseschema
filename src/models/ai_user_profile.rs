@@ -26,6 +26,8 @@ pub struct AiUserProfile {
     pub auto_derived_at: Option<DateTime<Utc>>,
     pub updated_at: DateTime<Utc>,
     pub preferred_experience_level: Option<String>,
+    pub max_drawdown_tolerance_pct: Option<BigDecimal>,
+    pub success_definition: Option<String>,
 }
 
 /// Insertable record for ai_user_profiles table
@@ -41,6 +43,8 @@ pub struct NewAiUserProfile {
     pub common_parameters: Option<serde_json::Value>,
     pub style_notes: Option<String>,
     pub preferred_experience_level: Option<String>,
+    pub max_drawdown_tolerance_pct: Option<BigDecimal>,
+    pub success_definition: Option<String>,
 }
 
 /// Changeset for updating ai_user_profiles
@@ -60,4 +64,6 @@ pub struct UpdateAiUserProfile {
     pub auto_derived_at: Option<DateTime<Utc>>,
     pub updated_at: Option<DateTime<Utc>>,
     pub preferred_experience_level: Option<String>,
+    pub max_drawdown_tolerance_pct: Option<BigDecimal>,
+    pub success_definition: Option<String>,
 }

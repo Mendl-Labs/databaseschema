@@ -265,6 +265,9 @@ diesel::table! {
         preferred_capital_range -> Nullable<Jsonb>,
         #[max_length = 20]
         preferred_experience_level -> Nullable<Varchar>,
+        max_drawdown_tolerance_pct -> Nullable<Numeric>,
+        #[max_length = 30]
+        success_definition -> Nullable<Varchar>,
     }
 }
 
