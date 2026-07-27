@@ -1106,6 +1106,7 @@ diesel::table! {
         status -> Varchar,
         last_data_at -> Nullable<Timestamptz>,
         bars_accumulated -> Nullable<Int4>,
+        leverage -> Numeric,
     }
 }
 

@@ -54,6 +54,11 @@ pub struct DeployedStrategy {
     /// in-memory state and is wiped on every SignalEngine restart. NULL =
     /// never tracked (pre-migration row, or not yet flushed once).
     pub bars_accumulated: Option<i32>,
+    /// Leverage multiplier for margined positions (e.g. 3.0 = 3x). `1.0`
+    /// (default) = unleveraged, identical to sizing before this column
+    /// existed. Mirrors `config::BacktestConfig.leverage` so a strategy's
+    /// live/paper order sizing matches what it was backtested/optimized with.
+    pub leverage: BigDecimal,
 }
 
 /// New deployed strategy for insertion
