@@ -51,6 +51,28 @@ pub async fn apply_fill(
     price: &BigDecimal,
     fees: &BigDecimal,
 ) -> Result<BigDecimal, diesel::result::Error> {
+    apply_fill_with_pair_tag(conn, deployment_id, tenant_id, exchange, symbol, side, qty, price, fees, None, None).await
+}
+
+/// Same as [`apply_fill`], but tags a brand-new position row with
+/// `pair_group_id`/`leg_role` when this fill is one leg of a pairs-trading
+/// position (see `deployment_positions.pair_group_id`'s migration comment).
+/// Only consulted when opening a position from flat -- an existing row's tag
+/// is never overwritten by a subsequent fill.
+#[allow(clippy::too_many_arguments)]
+pub async fn apply_fill_with_pair_tag(
+    conn: &mut AsyncPgConnection,
+    deployment_id: Uuid,
+    tenant_id: Uuid,
+    exchange: &str,
+    symbol: &str,
+    side: FillSide,
+    qty: &BigDecimal,
+    price: &BigDecimal,
+    fees: &BigDecimal,
+    pair_group_id: Option<Uuid>,
+    leg_role: Option<&str>,
+) -> Result<BigDecimal, diesel::result::Error> {
     let signed_qty = match side {
         FillSide::Buy => qty.clone(),
         FillSide::Sell => -qty.clone(),
@@ -145,6 +167,8 @@ pub async fn apply_fill(
             qty: new_qty,
             avg_cost: new_avg,
             realized_pnl_total: new_realized_total,
+            pair_group_id,
+            leg_role: leg_role.map(|s| s.to_string()),
         };
         diesel::insert_into(deployment_positions::table)
             .values(&new_row)

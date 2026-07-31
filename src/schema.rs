@@ -1124,6 +1124,9 @@ diesel::table! {
         last_mark_price -> Nullable<Numeric>,
         last_mark_at -> Nullable<Timestamptz>,
         updated_at -> Timestamptz,
+        pair_group_id -> Nullable<Uuid>,
+        #[max_length = 16]
+        leg_role -> Nullable<Varchar>,
     }
 }
 
