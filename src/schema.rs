@@ -1127,6 +1127,7 @@ diesel::table! {
         pair_group_id -> Nullable<Uuid>,
         #[max_length = 16]
         leg_role -> Nullable<Varchar>,
+        opened_at -> Timestamptz,
     }
 }
 

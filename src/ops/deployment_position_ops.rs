@@ -140,6 +140,10 @@ pub async fn apply_fill_with_pair_tag(
     let realized_net = &realized_gross - fees;
     let new_realized_total = &realized_total_old + &realized_net;
     let now = Utc::now();
+    // Reopening a previously-flat row counts as a fresh open, same as an
+    // insert -- `old_is_zero` covers both "brand new row" and "existing row
+    // that had closed back to flat and is now being reopened by this fill".
+    let reopened = old_is_zero;
 
     if existing.is_some() {
         diesel::update(
@@ -155,6 +159,7 @@ pub async fn apply_fill_with_pair_tag(
             last_mark_price: None,
             last_mark_at: None,
             updated_at: Some(now),
+            opened_at: if reopened { Some(now) } else { None },
         })
         .execute(conn)
         .await?;
@@ -169,6 +174,7 @@ pub async fn apply_fill_with_pair_tag(
             realized_pnl_total: new_realized_total,
             pair_group_id,
             leg_role: leg_role.map(|s| s.to_string()),
+            opened_at: now,
         };
         diesel::insert_into(deployment_positions::table)
             .values(&new_row)
