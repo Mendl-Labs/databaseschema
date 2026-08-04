@@ -33,6 +33,9 @@ pub struct DeploymentPosition {
     /// "pair_long" or "pair_short" -- which side of the pair this row is.
     /// `None` when `pair_group_id` is `None`.
     pub leg_role: Option<String>,
+    /// When this position was (most recently) opened from flat -- unlike
+    /// `updated_at`, this does not change on subsequent adds/partial closes.
+    pub opened_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
@@ -49,6 +52,7 @@ pub struct NewDeploymentPosition {
     pub pair_group_id: Option<Uuid>,
     #[diesel(treat_none_as_default_value = false)]
     pub leg_role: Option<String>,
+    pub opened_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, AsChangeset, Default)]
@@ -60,4 +64,5 @@ pub struct UpdateDeploymentPosition {
     pub last_mark_price: Option<Option<BigDecimal>>,
     pub last_mark_at: Option<Option<DateTime<Utc>>>,
     pub updated_at: Option<DateTime<Utc>>,
+    pub opened_at: Option<DateTime<Utc>>,
 }
