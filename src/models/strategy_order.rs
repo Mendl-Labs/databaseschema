@@ -1,3 +1,6 @@
+//! Smart order routing audit trail. No tenant_id (was already tenant-free
+//! in the private schema).
+
 use crate::schema::*;
 use diesel::prelude::*;
 use diesel::pg::PgValue;
@@ -9,7 +12,6 @@ use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use std::io::Write;
 
-// SQL type enums for strategy orders
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)]
 #[diesel(sql_type = crate::schema::sql_types::OrderStatus)]
@@ -198,7 +200,6 @@ impl diesel::serialize::ToSql<crate::schema::sql_types::ExecutionUrgency, diesel
     }
 }
 
-// Strategy Order model
 #[derive(Debug, Clone, Queryable, Insertable, Identifiable, Selectable, Serialize, Deserialize)]
 #[diesel(table_name = strategy_orders)]
 #[diesel(primary_key(id))]
@@ -244,16 +245,15 @@ pub struct StrategyOrder {
     pub error_message: Option<String>,
     pub retry_count: Option<i32>,
     pub signal_timestamp: DateTime<Utc>,
-    pub order_created_at: DateTime<Utc>,
     pub order_submitted_at: Option<DateTime<Utc>>,
     pub first_fill_at: Option<DateTime<Utc>>,
     pub last_fill_at: Option<DateTime<Utc>>,
     pub completed_at: Option<DateTime<Utc>>,
     pub created_by: Option<String>,
+    pub order_created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
-// New Strategy Order struct for inserts
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
 #[diesel(table_name = strategy_orders)]
 pub struct NewStrategyOrder {
@@ -280,7 +280,6 @@ pub struct NewStrategyOrder {
     pub created_by: Option<String>,
 }
 
-// Order Fill model
 #[derive(Debug, Clone, Queryable, Insertable, Identifiable, Associations, Selectable, Serialize, Deserialize)]
 #[diesel(table_name = strategy_order_fills)]
 #[diesel(primary_key(id))]
@@ -304,7 +303,6 @@ pub struct StrategyOrderFill {
     pub created_at: DateTime<Utc>,
 }
 
-// New Order Fill struct for inserts
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
 #[diesel(table_name = strategy_order_fills)]
 pub struct NewStrategyOrderFill {
@@ -324,7 +322,6 @@ pub struct NewStrategyOrderFill {
     pub fill_timestamp: DateTime<Utc>,
 }
 
-// Order State Change model
 #[derive(Debug, Clone, Queryable, Insertable, Identifiable, Associations, Selectable, Serialize, Deserialize)]
 #[diesel(table_name = strategy_order_state_changes)]
 #[diesel(primary_key(id))]
@@ -340,11 +337,10 @@ pub struct StrategyOrderStateChange {
     pub triggered_by: Option<String>,
     pub exchange_message: Option<String>,
     pub state_data: Option<serde_json::Value>,
-    pub changed_at: DateTime<Utc>,
     pub changed_by: Option<String>,
+    pub changed_at: DateTime<Utc>,
 }
 
-// New Order State Change struct for inserts
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
 #[diesel(table_name = strategy_order_state_changes)]
 pub struct NewStrategyOrderStateChange {

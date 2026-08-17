@@ -1,2 +1,0 @@
--- Cannot remove enum values from PostgreSQL without recreating the type
--- The 'pro' and 'live' values will remain but be unused

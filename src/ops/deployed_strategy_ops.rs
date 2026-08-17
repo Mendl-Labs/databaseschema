@@ -1,6 +1,4 @@
-//! Deployed Strategy Database Operations
-//!
-//! CRUD operations for deployed_strategies table.
+//! Deployed Strategy Database Operations (tenant-free).
 
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
@@ -11,8 +9,6 @@ use uuid::Uuid;
 use crate::models::deployed_strategy::{DeployedStrategy, UpdateLivePerformance};
 use crate::schema::deployed_strategies;
 
-/// Update live performance metrics for a deployment.
-/// Called by SignalEngine's PaperTradeWriter after fills.
 pub async fn update_live_performance(
     conn: &mut AsyncPgConnection,
     deployment_id: Uuid,
@@ -24,37 +20,28 @@ pub async fn update_live_performance(
         .await
 }
 
-/// Get a single deployment by ID and tenant
 pub async fn get_deployment(
     conn: &mut AsyncPgConnection,
     deployment_id: Uuid,
-    tenant_id: Uuid,
 ) -> Result<Option<DeployedStrategy>, diesel::result::Error> {
     deployed_strategies::table
         .filter(deployed_strategies::id.eq(deployment_id))
-        .filter(deployed_strategies::tenant_id.eq(tenant_id))
         .first(conn)
         .await
         .optional()
 }
 
-/// Get all active deployments for a tenant
 pub async fn get_active_deployments(
     conn: &mut AsyncPgConnection,
-    tenant_id: Uuid,
 ) -> Result<Vec<DeployedStrategy>, diesel::result::Error> {
     deployed_strategies::table
-        .filter(deployed_strategies::tenant_id.eq(tenant_id))
         .filter(deployed_strategies::is_active.eq(true))
         .order(deployed_strategies::deployed_at.desc())
         .load(conn)
         .await
 }
 
-/// Stamp the market-data heartbeat (`last_data_at`) for a batch of
-/// deployments. Called by SignalEngine's market-health writer (~30s cadence)
-/// for every active deployment whose symbol received data in the freshness
-/// window — the signal behind the dashboard's per-deployment feed badge.
+/// Stamp the market-data heartbeat (`last_data_at`) for a batch of deployments.
 pub async fn stamp_last_data_at(
     conn: &mut AsyncPgConnection,
     deployment_ids: &[Uuid],
@@ -71,9 +58,7 @@ pub async fn stamp_last_data_at(
     .await
 }
 
-/// Stamp `last_signal_at` for a deployment. Called by SignalEngine's
-/// market-health writer flushing the in-memory bridge emission map — the
-/// write path behind the dashboard's "Last signal" recency indicator.
+/// Stamp `last_signal_at` for a deployment.
 pub async fn stamp_last_signal_at(
     conn: &mut AsyncPgConnection,
     deployment_id: Uuid,
@@ -85,11 +70,7 @@ pub async fn stamp_last_signal_at(
         .await
 }
 
-/// Stamp `bars_accumulated` for a deployment. Called by SignalEngine's
-/// market-health writer flushing the in-memory bar-count map -- the write
-/// path behind the dashboard's "still warming up" indicator, since a
-/// strategy's bar history lives only in the Python worker's in-memory state
-/// and is wiped on every SignalEngine restart.
+/// Stamp `bars_accumulated` for a deployment.
 pub async fn stamp_bars_accumulated(
     conn: &mut AsyncPgConnection,
     deployment_id: Uuid,
@@ -102,7 +83,6 @@ pub async fn stamp_bars_accumulated(
 }
 
 /// Increment trade count and update P&L for a deployment (atomic update).
-/// Uses SQL expressions to avoid race conditions between concurrent fills.
 pub async fn increment_trade_and_pnl(
     conn: &mut AsyncPgConnection,
     deployment_id: Uuid,

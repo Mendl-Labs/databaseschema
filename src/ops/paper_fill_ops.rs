@@ -1,4 +1,4 @@
-//! Paper Fill Recording — atomic trio of writes per fill.
+//! Paper Fill Recording — atomic trio of writes per fill (tenant-free).
 //!
 //! Wraps the three operations a fill must perform (apply to position, insert
 //! trade history row, bump deployed_strategies counters) in a single
@@ -28,7 +28,6 @@ pub struct RecordFillOutcome {
 #[allow(clippy::too_many_arguments)]
 pub async fn record_paper_fill(
     conn: &mut AsyncPgConnection,
-    tenant_id: Uuid,
     deployment_id: Uuid,
     exchange: &str,
     symbol: &str,
@@ -51,7 +50,6 @@ pub async fn record_paper_fill(
             let realized_pnl = deployment_position_ops::apply_fill(
                 conn,
                 deployment_id,
-                tenant_id,
                 exchange,
                 symbol,
                 fill_side,
@@ -63,7 +61,6 @@ pub async fn record_paper_fill(
 
             let value = &qty * &price;
             let trade = NewTradeRecord {
-                tenant_id,
                 deployment_id,
                 exchange: exchange.to_string(),
                 symbol: symbol.to_string(),

@@ -1,22 +1,18 @@
-//! Kill Switch Events Database Operations
+//! Kill Switch Events Database Operations (tenant-free).
 
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
-use uuid::Uuid;
 
 use crate::models::kill_switch_event::{KillSwitchEvent, NewKillSwitchEvent};
 use crate::schema::kill_switch_events;
 
-/// Insert a trigger event.
 pub async fn record_trigger(
     conn: &mut AsyncPgConnection,
-    tenant_id: Uuid,
     reason: &str,
     notes: Option<&str>,
 ) -> Result<KillSwitchEvent, diesel::result::Error> {
     let new = NewKillSwitchEvent {
-        tenant_id,
         event_type: "trigger".to_string(),
         reason: reason.to_string(),
         triggered_at: Utc::now(),
@@ -31,12 +27,10 @@ pub async fn record_trigger(
 /// Mark the most recent un-reset trigger as reset.
 pub async fn record_reset(
     conn: &mut AsyncPgConnection,
-    tenant_id: Uuid,
     notes: Option<&str>,
 ) -> Result<usize, diesel::result::Error> {
     diesel::update(
         kill_switch_events::table
-            .filter(kill_switch_events::tenant_id.eq(tenant_id))
             .filter(kill_switch_events::event_type.eq("trigger"))
             .filter(kill_switch_events::reset_at.is_null()),
     )
@@ -48,13 +42,11 @@ pub async fn record_reset(
     .await
 }
 
-/// Check whether there is an outstanding (un-reset) trigger for this tenant.
+/// Check whether there is an outstanding (un-reset) trigger.
 pub async fn has_active_trigger(
     conn: &mut AsyncPgConnection,
-    tenant_id: Uuid,
 ) -> Result<Option<KillSwitchEvent>, diesel::result::Error> {
     kill_switch_events::table
-        .filter(kill_switch_events::tenant_id.eq(tenant_id))
         .filter(kill_switch_events::event_type.eq("trigger"))
         .filter(kill_switch_events::reset_at.is_null())
         .order(kill_switch_events::triggered_at.desc())

@@ -1,7 +1,4 @@
-//! Trade History Model
-//!
-//! Represents executed trades from live trading deployments.
-//! Used for audit trail, P&L calculation, and trade analytics.
+//! Trade history model. No tenant_id.
 
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
@@ -9,9 +6,6 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::schema::trade_history;
-
-/// Trade side enum for type safety
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TradeSide {
@@ -37,18 +31,18 @@ impl TradeSide {
     }
 }
 
-/// A recorded trade from live trading
-/// Fields must match schema.rs trade_history table exactly (in order)
+/// Fields must match schema.rs trade_history table exactly (in order).
 #[derive(Debug, Clone, Queryable, Identifiable, Selectable, Serialize, Deserialize)]
-#[diesel(table_name = trade_history)]
+#[diesel(table_name = crate::schema::trade_history)]
+#[diesel(primary_key(executed_at, id))]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct TradeRecord {
     pub id: Uuid,
-    pub tenant_id: Uuid,
     pub deployment_id: Uuid,
     pub exchange: String,
     pub symbol: String,
     pub side: String,
+    pub order_type: String,
     pub quantity: BigDecimal,
     pub price: BigDecimal,
     pub quote_currency: String,
@@ -58,17 +52,19 @@ pub struct TradeRecord {
     pub realized_pnl: Option<BigDecimal>,
     pub exchange_trade_id: String,
     pub exchange_order_id: String,
-    pub executed_at: DateTime<Utc>,
-    pub recorded_at: DateTime<Utc>,
+    pub position_side: Option<String>,
+    pub position_size: Option<BigDecimal>,
+    pub avg_entry_price: Option<BigDecimal>,
     pub signal_price: Option<BigDecimal>,
     pub signal_at: Option<DateTime<Utc>>,
+    pub metadata: Option<serde_json::Value>,
+    pub executed_at: DateTime<Utc>,
+    pub recorded_at: DateTime<Utc>,
 }
 
-/// New trade record for insertion
 #[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
-#[diesel(table_name = trade_history)]
+#[diesel(table_name = crate::schema::trade_history)]
 pub struct NewTradeRecord {
-    pub tenant_id: Uuid,
     pub deployment_id: Uuid,
     pub exchange: String,
     pub symbol: String,
@@ -88,9 +84,7 @@ pub struct NewTradeRecord {
 }
 
 impl NewTradeRecord {
-    /// Create a new trade record with required fields
     pub fn new(
-        tenant_id: Uuid,
         deployment_id: Uuid,
         exchange: impl Into<String>,
         symbol: impl Into<String>,
@@ -101,7 +95,6 @@ impl NewTradeRecord {
     ) -> Self {
         let value = &quantity * &price;
         Self {
-            tenant_id,
             deployment_id,
             exchange: exchange.into(),
             symbol: symbol.into(),
@@ -119,41 +112,5 @@ impl NewTradeRecord {
             signal_price: None,
             signal_at: None,
         }
-    }
-
-    /// Set quote currency
-    pub fn with_quote_currency(mut self, currency: impl Into<String>) -> Self {
-        self.quote_currency = currency.into();
-        self
-    }
-
-    /// Set commission
-    pub fn with_commission(mut self, amount: BigDecimal, asset: impl Into<String>) -> Self {
-        self.commission = amount;
-        self.commission_asset = asset.into();
-        self
-    }
-
-    /// Set realized P&L (for position-closing trades)
-    pub fn with_realized_pnl(mut self, pnl: BigDecimal) -> Self {
-        self.realized_pnl = Some(pnl);
-        self
-    }
-
-    /// Set exchange references
-    pub fn with_exchange_ids(
-        mut self,
-        trade_id: impl Into<String>,
-        order_id: impl Into<String>,
-    ) -> Self {
-        self.exchange_trade_id = trade_id.into();
-        self.exchange_order_id = order_id.into();
-        self
-    }
-
-    /// Set trade value explicitly (overrides computed value)
-    pub fn with_value(mut self, value: BigDecimal) -> Self {
-        self.value = value;
-        self
     }
 }

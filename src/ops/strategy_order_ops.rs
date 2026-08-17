@@ -1,3 +1,5 @@
+//! Smart order routing audit trail operations. No tenant_id.
+
 use crate::models::strategy_order::*;
 use crate::schema;
 use anyhow::Result;
@@ -7,24 +9,19 @@ use diesel_async::{AsyncPgConnection, AsyncConnection, RunQueryDsl};
 use uuid::Uuid;
 use bigdecimal::BigDecimal;
 
-/// Strategy Order Operations
 pub struct StrategyOrderOps;
 
 impl StrategyOrderOps {
-    /// Create a new strategy order
     pub async fn create_order(
         conn: &mut AsyncPgConnection,
         order: NewStrategyOrder,
     ) -> Result<StrategyOrder> {
-        // Input validation
         if order.unique_id.is_empty() {
             return Err(anyhow::anyhow!("unique_id cannot be empty"));
         }
-        
         if order.symbol.is_empty() || order.symbol.len() > 20 {
             return Err(anyhow::anyhow!("symbol must be 1-20 characters"));
         }
-        
         if order.original_quantity <= BigDecimal::from(0) {
             return Err(anyhow::anyhow!("quantity must be positive"));
         }
@@ -34,14 +31,11 @@ impl StrategyOrderOps {
             .returning(StrategyOrder::as_returning())
             .get_result(conn)
             .await
-            .map_err(|_| {
-                anyhow::anyhow!("Failed to create order")
-            })?;
-            
+            .map_err(|_| anyhow::anyhow!("Failed to create order"))?;
+
         Ok(inserted_order)
     }
 
-    /// Get order by ID
     pub async fn get_order_by_id(
         conn: &mut AsyncPgConnection,
         order_id: Uuid,
@@ -52,13 +46,10 @@ impl StrategyOrderOps {
             .first::<StrategyOrder>(conn)
             .await
             .optional()
-            .map_err(|_| {
-                anyhow::anyhow!("Failed to fetch order")
-            })?;
+            .map_err(|_| anyhow::anyhow!("Failed to fetch order"))?;
         Ok(order)
     }
 
-    /// Get order by unique ID
     pub async fn get_order_by_unique_id(
         conn: &mut AsyncPgConnection,
         unique_order_id: String,
@@ -66,20 +57,17 @@ impl StrategyOrderOps {
         if unique_order_id.is_empty() {
             return Err(anyhow::anyhow!("unique_id cannot be empty"));
         }
-        
+
         let order = schema::strategy_orders::table
             .filter(schema::strategy_orders::unique_id.eq(unique_order_id))
             .select(StrategyOrder::as_select())
             .first::<StrategyOrder>(conn)
             .await
             .optional()
-            .map_err(|_| {
-                anyhow::anyhow!("Failed to fetch order")
-            })?;
+            .map_err(|_| anyhow::anyhow!("Failed to fetch order"))?;
         Ok(order)
     }
 
-    /// Get all orders for a strategy instance
     pub async fn get_orders_by_strategy_instance(
         conn: &mut AsyncPgConnection,
         strategy_instance_id: Uuid,
@@ -87,34 +75,26 @@ impl StrategyOrderOps {
         let orders = schema::strategy_orders::table
             .filter(schema::strategy_orders::strategy_instance_id.eq(Some(strategy_instance_id)))
             .order(schema::strategy_orders::order_created_at.desc())
-            .limit(10000) // Prevent memory exhaustion
+            .limit(10000)
             .select(StrategyOrder::as_select())
             .load::<StrategyOrder>(conn)
             .await
-            .map_err(|_| {
-                anyhow::anyhow!("Failed to fetch orders")
-            })?;
-            
+            .map_err(|_| anyhow::anyhow!("Failed to fetch orders"))?;
+
         Ok(orders)
     }
 
-    /// Get orders by status
     pub async fn get_orders_by_status(
         conn: &mut AsyncPgConnection,
         order_status: OrderStatus,
         limit: Option<i64>,
     ) -> Result<Vec<StrategyOrder>> {
-        // Validate limit to prevent memory exhaustion
         const MAX_LIMIT: i64 = 10000;
         let safe_limit = match limit {
-            Some(l) if l > MAX_LIMIT => {
-                MAX_LIMIT
-            },
-            Some(l) if l <= 0 => {
-                return Err(anyhow::anyhow!("limit must be positive"));
-            },
+            Some(l) if l > MAX_LIMIT => MAX_LIMIT,
+            Some(l) if l <= 0 => return Err(anyhow::anyhow!("limit must be positive")),
             Some(l) => l,
-            None => 1000, // Default reasonable limit
+            None => 1000,
         };
 
         let query = schema::strategy_orders::table
@@ -126,14 +106,11 @@ impl StrategyOrderOps {
 
         let orders = query.load::<StrategyOrder>(conn)
             .await
-            .map_err(|_| {
-                anyhow::anyhow!("Failed to fetch orders")
-            })?;
-            
+            .map_err(|_| anyhow::anyhow!("Failed to fetch orders"))?;
+
         Ok(orders)
     }
 
-    /// Update order status
     pub async fn update_order_status(
         conn: &mut AsyncPgConnection,
         order_id: Uuid,
@@ -147,14 +124,11 @@ impl StrategyOrderOps {
             .returning(StrategyOrder::as_returning())
             .get_result(conn)
             .await
-            .map_err(|_| {
-                anyhow::anyhow!("Failed to update order")
-            })?;
-            
+            .map_err(|_| anyhow::anyhow!("Failed to update order"))?;
+
         Ok(updated_order)
     }
 
-    /// Cancel order
     pub async fn cancel_order(
         conn: &mut AsyncPgConnection,
         order_id: Uuid,
@@ -163,7 +137,7 @@ impl StrategyOrderOps {
         if cancellation_reason.is_empty() {
             return Err(anyhow::anyhow!("cancellation_reason cannot be empty"));
         }
-        
+
         let updated_order = diesel::update(schema::strategy_orders::table.filter(schema::strategy_orders::id.eq(order_id)))
             .set((
                 schema::strategy_orders::status.eq(OrderStatus::Cancelled),
@@ -174,45 +148,36 @@ impl StrategyOrderOps {
             .returning(StrategyOrder::as_returning())
             .get_result(conn)
             .await
-            .map_err(|_| {
-                anyhow::anyhow!("Failed to cancel order")
-            })?;
-            
+            .map_err(|_| anyhow::anyhow!("Failed to cancel order"))?;
+
         Ok(updated_order)
     }
 }
 
-/// Strategy Order Fill Operations
 pub struct StrategyOrderFillOps;
 
 impl StrategyOrderFillOps {
-    /// Add a fill to an order
     pub async fn create_fill(
         conn: &mut AsyncPgConnection,
         fill: NewStrategyOrderFill,
     ) -> Result<StrategyOrderFill> {
-        // Input validation
         if fill.quantity <= BigDecimal::from(0) {
             return Err(anyhow::anyhow!("fill quantity must be positive"));
         }
-        
         if fill.price <= BigDecimal::from(0) {
             return Err(anyhow::anyhow!("fill price must be positive"));
         }
-        
+
         let inserted_fill = diesel::insert_into(schema::strategy_order_fills::table)
             .values(&fill)
             .returning(StrategyOrderFill::as_returning())
             .get_result(conn)
             .await
-            .map_err(|_| {
-                anyhow::anyhow!("Failed to create fill")
-            })?;
-            
+            .map_err(|_| anyhow::anyhow!("Failed to create fill"))?;
+
         Ok(inserted_fill)
     }
 
-    /// Get all fills for an order
     pub async fn get_fills_by_order(
         conn: &mut AsyncPgConnection,
         order_id: Uuid,
@@ -220,23 +185,19 @@ impl StrategyOrderFillOps {
         let fills = schema::strategy_order_fills::table
             .filter(schema::strategy_order_fills::order_id.eq(order_id))
             .order(schema::strategy_order_fills::fill_timestamp.asc())
-            .limit(1000) // Prevent memory exhaustion
+            .limit(1000)
             .select(StrategyOrderFill::as_select())
             .load::<StrategyOrderFill>(conn)
             .await
-            .map_err(|_| {
-                anyhow::anyhow!("Failed to fetch fills")
-            })?;
-            
+            .map_err(|_| anyhow::anyhow!("Failed to fetch fills"))?;
+
         Ok(fills)
     }
 }
 
-/// Strategy Order State Change Operations  
 pub struct StrategyOrderStateChangeOps;
 
 impl StrategyOrderStateChangeOps {
-    /// Record a state change for an order
     pub async fn create_state_change(
         conn: &mut AsyncPgConnection,
         state_change: NewStrategyOrderStateChange,
@@ -246,14 +207,11 @@ impl StrategyOrderStateChangeOps {
             .returning(StrategyOrderStateChange::as_returning())
             .get_result(conn)
             .await
-            .map_err(|_| {
-                anyhow::anyhow!("Failed to create state change")
-            })?;
-            
+            .map_err(|_| anyhow::anyhow!("Failed to create state change"))?;
+
         Ok(inserted_change)
     }
 
-    /// Get all state changes for an order
     pub async fn get_state_changes_by_order(
         conn: &mut AsyncPgConnection,
         order_id: Uuid,
@@ -261,33 +219,27 @@ impl StrategyOrderStateChangeOps {
         let changes = schema::strategy_order_state_changes::table
             .filter(schema::strategy_order_state_changes::order_id.eq(order_id))
             .order(schema::strategy_order_state_changes::changed_at.asc())
-            .limit(1000) // Prevent memory exhaustion
+            .limit(1000)
             .select(StrategyOrderStateChange::as_select())
             .load::<StrategyOrderStateChange>(conn)
             .await
-            .map_err(|_| {
-                anyhow::anyhow!("Failed to fetch state changes")
-            })?;
-            
+            .map_err(|_| anyhow::anyhow!("Failed to fetch state changes"))?;
+
         Ok(changes)
     }
 }
 
-/// Combined Operations for Workflows
 pub struct StrategyOrderWorkflow;
 
 impl StrategyOrderWorkflow {
-    /// Create order with initial state change record
     pub async fn create_order_with_state(
         conn: &mut AsyncPgConnection,
         order: NewStrategyOrder,
         created_by: Option<String>,
     ) -> Result<(StrategyOrder, StrategyOrderStateChange)> {
         let result = conn.transaction::<_, anyhow::Error, _>(|conn| Box::pin(async move {
-            // Create the order
             let created_order = StrategyOrderOps::create_order(conn, order).await?;
-            
-            // Record initial state change
+
             let initial_state = NewStrategyOrderStateChange {
                 order_id: created_order.id,
                 previous_status: None,
@@ -300,12 +252,12 @@ impl StrategyOrderWorkflow {
                 state_data: None,
                 changed_by: created_by,
             };
-            
+
             let state_change = StrategyOrderStateChangeOps::create_state_change(conn, initial_state).await?;
-            
+
             Ok((created_order, state_change))
         })).await?;
-        
+
         Ok(result)
     }
 }

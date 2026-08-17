@@ -1,15 +1,8 @@
-pub mod audit_log_ops;
-pub mod backtest_result_ops;
 pub mod deployed_strategy_ops;
 pub mod deployment_position_ops;
+pub mod market_data_health_ops;
 pub mod paper_fill_ops;
+pub mod trade_history_ops;
 pub mod pnl_snapshot_ops;
 pub mod kill_switch_event_ops;
-pub mod market_data_health_ops;
-pub mod strategy_ops;
 pub mod strategy_order_ops;
-pub mod tenant_ops;
-pub mod tenant_lifecycle;
-pub mod tenant_validator;
-pub mod trade_history_ops;
-pub mod usage_event_ops;

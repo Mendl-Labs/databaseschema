@@ -1,22 +1,15 @@
-//! Market Data Health Model
-//!
-//! Per-(tenant, exchange, symbol) freshness of market data. Written by
-//! SignalEngine as ticks/orderbooks flow in, read by the BacktestingEngine
-//! dashboard endpoint to surface staleness/gap indicators in the UI.
+//! Market data health model. No tenant_id -- composite key is
+//! (exchange, symbol) instead of the private schema's (tenant_id, exchange, symbol).
 
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-
-use crate::schema::market_data_health;
 
 #[derive(Debug, Clone, Queryable, Identifiable, Selectable, Serialize, Deserialize)]
-#[diesel(table_name = market_data_health)]
-#[diesel(primary_key(tenant_id, exchange, symbol))]
+#[diesel(table_name = crate::schema::market_data_health)]
+#[diesel(primary_key(exchange, symbol))]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct MarketDataHealth {
-    pub tenant_id: Uuid,
     pub exchange: String,
     pub symbol: String,
     pub last_tick_at: Option<DateTime<Utc>>,
@@ -27,9 +20,8 @@ pub struct MarketDataHealth {
 }
 
 #[derive(Debug, Clone, Insertable, AsChangeset, Serialize, Deserialize)]
-#[diesel(table_name = market_data_health)]
+#[diesel(table_name = crate::schema::market_data_health)]
 pub struct UpsertMarketDataHealth {
-    pub tenant_id: Uuid,
     pub exchange: String,
     pub symbol: String,
     pub last_tick_at: Option<DateTime<Utc>>,

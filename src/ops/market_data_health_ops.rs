@@ -1,6 +1,6 @@
-//! Market Data Health Operations
+//! Market Data Health Operations (tenant-free).
 //!
-//! Upsert per-(tenant, exchange, symbol) freshness rows.
+//! Upsert per-(exchange, symbol) freshness rows.
 
 use chrono::Utc;
 use diesel::prelude::*;
@@ -9,7 +9,7 @@ use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use crate::models::market_data_health::UpsertMarketDataHealth;
 use crate::schema::market_data_health;
 
-/// Upsert a market-data freshness snapshot for a (tenant, exchange, symbol).
+/// Upsert a market-data freshness snapshot for an (exchange, symbol).
 /// Updates `updated_at = NOW()` on conflict.
 pub async fn upsert(
     conn: &mut AsyncPgConnection,
@@ -19,7 +19,6 @@ pub async fn upsert(
     diesel::insert_into(market_data_health::table)
         .values(row)
         .on_conflict((
-            market_data_health::tenant_id,
             market_data_health::exchange,
             market_data_health::symbol,
         ))

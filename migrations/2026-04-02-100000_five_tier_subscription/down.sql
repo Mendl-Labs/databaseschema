@@ -1,2 +1,0 @@
--- Cannot remove enum values from PostgreSQL without recreating the type
--- The explorer, trader, institution values will remain but be unused
