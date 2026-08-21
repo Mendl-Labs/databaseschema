@@ -2053,6 +2053,7 @@ checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 [[package]]
 name = "ultra-logger"
 version = "0.1.0"
+source = "git+https://github.com/Nwagbara-Group-LLC/LoggingEngine?tag=v0.1.0#1d1af4e5c82f0442e8a28095308761a4c3c46167"
 dependencies = [
  "async-trait",
  "chrono",
