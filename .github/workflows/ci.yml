@@ -1,0 +1,129 @@
+# CI for databaseschema: this repo had zero automation before this workflow (no .github directory at all), so
+# `diesel migration run` against migrations/2026-01-01-000000_oss_core_schema has never once been exercised by a
+# machine -- every consumer (BacktestingEngine, databaseschema-internal, etc.) runs it against their own Postgres
+# and has only ever found a broken migration by hitting it live. The `test` job below is the actual point of this
+# file: it stands up an ephemeral Postgres, runs the real migration, and runs the real `tests/smoke_test.rs`
+# end-to-end chain against it.
+#
+# Toolchain/caching conventions mirror this org's other Rust repos (see BacktestingCore's core-ci.yml and
+# databaseschema-internal's pr-test.yml): dtolnay/rust-toolchain pinned to a specific version (not `stable`, so a
+# new Rust release can't silently change CI behavior), Swatinem/rust-cache for the registry/target cache, and
+# postgres:17 as the service container (same version already used by databaseschema-internal's pr-test.yml, which
+# applies this very repo's migrations as a prerequisite step, and by BacktestingEngine's ci-cd.yml).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUST_TOOLCHAIN: "1.90.0"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint:
+    name: fmt, clippy, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: fmt
+        run: cargo fmt -- --check
+
+      - name: clippy (warnings are errors)
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: build
+        run: cargo build
+
+  test:
+    name: migrate + test (real Postgres)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Ephemeral, CI-only Postgres. This is a fresh ubuntu-latest VM per run
+    # (not a shared self-hosted box), so the standard 5432 port is fine --
+    # see databaseschema-internal's pr-test.yml and BacktestingEngine's
+    # ui-e2e job for the same pattern.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ci_test
+          POSTGRES_PASSWORD: ci_test
+          POSTGRES_DB: ci_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci_test"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://ci_test:ci_test@localhost:5432/ci_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - uses: Swatinem/rust-cache@v2
+
+      # Pinned to the same diesel_cli version this repo's own Dockerfile
+      # already installs (the migration-runner image used by the k8s Job
+      # that applies these migrations in production) -- not `stable`, so
+      # CI and the production migration runner stay on the same diesel_cli
+      # behavior. diesel 2.2.2 (this crate's Cargo.toml) and diesel_cli
+      # 2.2.4 are the same minor series.
+      - name: Install diesel_cli
+        run: |
+          if ! command -v diesel &> /dev/null; then
+            cargo install diesel_cli --no-default-features --features postgres --version 2.2.4
+          fi
+
+      - name: Run Diesel migrations against the ephemeral Postgres
+        run: diesel migration run
+
+      - name: cargo test (runs tests/smoke_test.rs end-to-end against the migrated DB)
+        run: cargo test
+
+  audit:
+    name: cargo-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-audit
+        run: |
+          if ! command -v cargo-audit &> /dev/null; then
+            # --locked: without it cargo resolves newer transitive deps (e.g. kstring 2.0.5 needs rustc 1.96)
+            # that do not build on the pinned RUST_TOOLCHAIN.
+            cargo install cargo-audit --locked
+          fi
+
+      - name: cargo audit
+        run: cargo audit
