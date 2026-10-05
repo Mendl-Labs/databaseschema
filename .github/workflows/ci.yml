@@ -120,7 +120,9 @@ jobs:
       - name: Install cargo-audit
         run: |
           if ! command -v cargo-audit &> /dev/null; then
-            cargo install cargo-audit
+            # --locked: without it cargo resolves newer transitive deps (e.g. kstring 2.0.5 needs rustc 1.96)
+            # that do not build on the pinned RUST_TOOLCHAIN.
+            cargo install cargo-audit --locked
           fi
 
       - name: cargo audit
