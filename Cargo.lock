@@ -1095,9 +1095,9 @@ checksum = "7df058c713841ad818f1dc5d3fd88063241cc61f49f5fbea4b951e8cf5a8d71d"
 
 [[package]]
 name = "uuid"
-version = "1.24.1"
+version = "1.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2cefc03fd367c0c6d4305de1b312cf00248c4114f4a0418ce6a6af769e3b0bd9"
+checksum = "2ef6dac1e96601b4fb3acccccff2139741fcb757cb9a36089bf5be91cfb285ce"
 dependencies = [
  "getrandom",
  "js-sys",
@@ -1291,79 +1291,3 @@ name = "zmij"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b"
-
-[[patch.unused]]
-name = "backtest"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "config"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "data_prep"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "dataloader"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "derivatives"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "genetic"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "greeks"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "metrics"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "orderbook"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "portfolio-eval"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "portfoliomanager"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "quant-diagnostics"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "riskmanager"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "signal"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "smartrouter"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "strategy"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "walkforward"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "weightsim"
-version = "0.3.0"
-
-[[patch.unused]]
-name = "weightsim-rules"
-version = "0.1.0"
