@@ -18,10 +18,7 @@ pub async fn upsert(
     let now = Utc::now();
     diesel::insert_into(market_data_health::table)
         .values(row)
-        .on_conflict((
-            market_data_health::exchange,
-            market_data_health::symbol,
-        ))
+        .on_conflict((market_data_health::exchange, market_data_health::symbol))
         .do_update()
         .set((
             market_data_health::last_tick_at.eq(row.last_tick_at),
