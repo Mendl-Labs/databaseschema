@@ -5,9 +5,8 @@ use crate::schema;
 use anyhow::Result;
 use chrono::Utc;
 use diesel::prelude::*;
-use diesel_async::{AsyncPgConnection, AsyncConnection, RunQueryDsl};
+use diesel_async::{AsyncConnection, AsyncPgConnection, RunQueryDsl};
 use uuid::Uuid;
-use bigdecimal::BigDecimal;
 
 pub struct StrategyOrderOps;
 
@@ -22,7 +21,7 @@ impl StrategyOrderOps {
         if order.symbol.is_empty() || order.symbol.len() > 20 {
             return Err(anyhow::anyhow!("symbol must be 1-20 characters"));
         }
-        if order.original_quantity <= BigDecimal::from(0) {
+        if order.original_quantity <= 0 {
             return Err(anyhow::anyhow!("quantity must be positive"));
         }
 
@@ -104,7 +103,8 @@ impl StrategyOrderOps {
             .select(StrategyOrder::as_select())
             .into_boxed();
 
-        let orders = query.load::<StrategyOrder>(conn)
+        let orders = query
+            .load::<StrategyOrder>(conn)
             .await
             .map_err(|_| anyhow::anyhow!("Failed to fetch orders"))?;
 
@@ -116,15 +116,17 @@ impl StrategyOrderOps {
         order_id: Uuid,
         new_status: OrderStatus,
     ) -> Result<StrategyOrder> {
-        let updated_order = diesel::update(schema::strategy_orders::table.filter(schema::strategy_orders::id.eq(order_id)))
-            .set((
-                schema::strategy_orders::status.eq(new_status),
-                schema::strategy_orders::updated_at.eq(Utc::now()),
-            ))
-            .returning(StrategyOrder::as_returning())
-            .get_result(conn)
-            .await
-            .map_err(|_| anyhow::anyhow!("Failed to update order"))?;
+        let updated_order = diesel::update(
+            schema::strategy_orders::table.filter(schema::strategy_orders::id.eq(order_id)),
+        )
+        .set((
+            schema::strategy_orders::status.eq(new_status),
+            schema::strategy_orders::updated_at.eq(Utc::now()),
+        ))
+        .returning(StrategyOrder::as_returning())
+        .get_result(conn)
+        .await
+        .map_err(|_| anyhow::anyhow!("Failed to update order"))?;
 
         Ok(updated_order)
     }
@@ -138,17 +140,19 @@ impl StrategyOrderOps {
             return Err(anyhow::anyhow!("cancellation_reason cannot be empty"));
         }
 
-        let updated_order = diesel::update(schema::strategy_orders::table.filter(schema::strategy_orders::id.eq(order_id)))
-            .set((
-                schema::strategy_orders::status.eq(OrderStatus::Cancelled),
-                schema::strategy_orders::rejection_reason.eq(Some(cancellation_reason)),
-                schema::strategy_orders::completed_at.eq(Some(Utc::now())),
-                schema::strategy_orders::updated_at.eq(Utc::now()),
-            ))
-            .returning(StrategyOrder::as_returning())
-            .get_result(conn)
-            .await
-            .map_err(|_| anyhow::anyhow!("Failed to cancel order"))?;
+        let updated_order = diesel::update(
+            schema::strategy_orders::table.filter(schema::strategy_orders::id.eq(order_id)),
+        )
+        .set((
+            schema::strategy_orders::status.eq(OrderStatus::Cancelled),
+            schema::strategy_orders::rejection_reason.eq(Some(cancellation_reason)),
+            schema::strategy_orders::completed_at.eq(Some(Utc::now())),
+            schema::strategy_orders::updated_at.eq(Utc::now()),
+        ))
+        .returning(StrategyOrder::as_returning())
+        .get_result(conn)
+        .await
+        .map_err(|_| anyhow::anyhow!("Failed to cancel order"))?;
 
         Ok(updated_order)
     }
@@ -161,10 +165,10 @@ impl StrategyOrderFillOps {
         conn: &mut AsyncPgConnection,
         fill: NewStrategyOrderFill,
     ) -> Result<StrategyOrderFill> {
-        if fill.quantity <= BigDecimal::from(0) {
+        if fill.quantity <= 0 {
             return Err(anyhow::anyhow!("fill quantity must be positive"));
         }
-        if fill.price <= BigDecimal::from(0) {
+        if fill.price <= 0 {
             return Err(anyhow::anyhow!("fill price must be positive"));
         }
 
@@ -237,26 +241,32 @@ impl StrategyOrderWorkflow {
         order: NewStrategyOrder,
         created_by: Option<String>,
     ) -> Result<(StrategyOrder, StrategyOrderStateChange)> {
-        let result = conn.transaction::<_, anyhow::Error, _>(|conn| Box::pin(async move {
-            let created_order = StrategyOrderOps::create_order(conn, order).await?;
+        let result = conn
+            .transaction::<_, anyhow::Error, _>(|conn| {
+                Box::pin(async move {
+                    let created_order = StrategyOrderOps::create_order(conn, order).await?;
 
-            let initial_state = NewStrategyOrderStateChange {
-                order_id: created_order.id,
-                previous_status: None,
-                new_status: created_order.status.clone(),
-                previous_quantity: None,
-                new_quantity: Some(created_order.original_quantity.clone()),
-                change_reason: Some("Order created".to_string()),
-                triggered_by: Some("System".to_string()),
-                exchange_message: None,
-                state_data: None,
-                changed_by: created_by,
-            };
+                    let initial_state = NewStrategyOrderStateChange {
+                        order_id: created_order.id,
+                        previous_status: None,
+                        new_status: created_order.status.clone(),
+                        previous_quantity: None,
+                        new_quantity: Some(created_order.original_quantity.clone()),
+                        change_reason: Some("Order created".to_string()),
+                        triggered_by: Some("System".to_string()),
+                        exchange_message: None,
+                        state_data: None,
+                        changed_by: created_by,
+                    };
 
-            let state_change = StrategyOrderStateChangeOps::create_state_change(conn, initial_state).await?;
+                    let state_change =
+                        StrategyOrderStateChangeOps::create_state_change(conn, initial_state)
+                            .await?;
 
-            Ok((created_order, state_change))
-        })).await?;
+                    Ok((created_order, state_change))
+                })
+            })
+            .await?;
 
         Ok(result)
     }

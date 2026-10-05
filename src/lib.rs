@@ -8,14 +8,14 @@
 //! tables carry a `tenant_id` column at all. Consumers that need multi-tenant
 //! isolation add it themselves at the application layer.
 
-pub mod schema;
+pub mod errors;
 pub mod models;
 pub mod ops;
-pub mod errors;
+pub mod schema;
 
 use anyhow::Result;
+use diesel_async::pooled_connection::{deadpool, AsyncDieselConnectionManager};
 use diesel_async::AsyncPgConnection;
-use diesel_async::pooled_connection::{AsyncDieselConnectionManager, deadpool};
 use dotenv::dotenv;
 use std::env;
 
@@ -34,5 +34,7 @@ pub fn create_connection_pool() -> deadpool::Pool<AsyncPgConnection> {
 pub async fn get_connection(
     pool: &deadpool::Pool<AsyncPgConnection>,
 ) -> Result<deadpool::Object<AsyncPgConnection>> {
-    pool.get().await.map_err(|e| anyhow::anyhow!("Database pool error: {}", e))
+    pool.get()
+        .await
+        .map_err(|e| anyhow::anyhow!("Database pool error: {}", e))
 }

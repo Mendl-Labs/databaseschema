@@ -90,16 +90,15 @@ pub async fn increment_trade_and_pnl(
 ) -> Result<usize, diesel::result::Error> {
     diesel::update(deployed_strategies::table.find(deployment_id))
         .set((
-            deployed_strategies::live_trades.eq(
-                diesel::dsl::sql::<diesel::sql_types::Nullable<diesel::sql_types::Int4>>(
-                    "COALESCE(live_trades, 0) + 1"
-                )
-            ),
-            deployed_strategies::live_pnl.eq(
-                diesel::dsl::sql::<diesel::sql_types::Nullable<diesel::sql_types::Numeric>>(
-                    &format!("COALESCE(live_pnl, 0) + {}", pnl_delta)
-                )
-            ),
+            deployed_strategies::live_trades.eq(diesel::dsl::sql::<
+                diesel::sql_types::Nullable<diesel::sql_types::Int4>,
+            >("COALESCE(live_trades, 0) + 1")),
+            deployed_strategies::live_pnl.eq(diesel::dsl::sql::<
+                diesel::sql_types::Nullable<diesel::sql_types::Numeric>,
+            >(&format!(
+                "COALESCE(live_pnl, 0) + {}",
+                pnl_delta
+            ))),
             deployed_strategies::last_trade_at.eq(Some(Utc::now())),
         ))
         .execute(conn)

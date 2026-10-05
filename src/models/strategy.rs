@@ -51,5 +51,5 @@ pub struct NewStrategy {
 
 /// Strategy instance / parameter types -- re-exported here to match the
 /// private repo's convention of importing them from `models::strategy`.
-pub use super::strategy_instance::{StrategyInstance, NewStrategyInstance};
+pub use super::strategy_instance::{NewStrategyInstance, StrategyInstance};
 pub use super::strategy_parameter::NewStrategyParameter;

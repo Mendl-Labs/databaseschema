@@ -13,15 +13,17 @@ use databaseschema::models::market_data_health::UpsertMarketDataHealth;
 use databaseschema::models::pnl_snapshot::NewPnLSnapshot;
 use databaseschema::models::trade_history::TradeSide;
 use databaseschema::ops::{
-    deployed_strategy_ops, deployment_position_ops, kill_switch_event_ops,
-    market_data_health_ops, paper_fill_ops, pnl_snapshot_ops,
+    deployed_strategy_ops, deployment_position_ops, kill_switch_event_ops, market_data_health_ops,
+    paper_fill_ops, pnl_snapshot_ops,
 };
 use databaseschema::schema::{backtest_results, deployed_strategies};
 use diesel_async::RunQueryDsl;
 
 async fn conn() -> AsyncPgConnection {
     let url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set for this test");
-    AsyncPgConnection::establish(&url).await.expect("failed to connect")
+    AsyncPgConnection::establish(&url)
+        .await
+        .expect("failed to connect")
 }
 
 #[tokio::test]
@@ -102,13 +104,18 @@ async fn full_paper_trading_chain_works_end_to_end() {
     // Opening a position from flat has zero GROSS realized P&L, but fees
     // always reduce realized P&L net (see apply_fill's doc comment) -- so
     // the net outcome here is exactly -fees.
-    assert_eq!(outcome.realized_pnl, BigDecimal::from(-10), "net P&L on open = -fees");
+    assert_eq!(
+        outcome.realized_pnl,
+        BigDecimal::from(-10),
+        "net P&L on open = -fees"
+    );
 
     // 5. Verify the position was actually written.
-    let position = deployment_position_ops::get_position(&mut conn, deployment_id, "kraken", "BTC-USD")
-        .await
-        .expect("get_position")
-        .expect("position should exist after a fill");
+    let position =
+        deployment_position_ops::get_position(&mut conn, deployment_id, "kraken", "BTC-USD")
+            .await
+            .expect("get_position")
+            .expect("position should exist after a fill");
     assert_eq!(position.qty, BigDecimal::from(1));
 
     // 6. Verify deployed_strategies' counters were bumped.
@@ -136,8 +143,13 @@ async fn full_paper_trading_chain_works_end_to_end() {
     // 8. P&L snapshot upsert (SignalEngine's portfolio_snapshotter path).
     pnl_snapshot_ops::upsert_snapshot(
         &mut conn,
-        NewPnLSnapshot::new(Utc::now(), BigDecimal::from(0), BigDecimal::from(0), BigDecimal::from(0))
-            .with_mode("paper"),
+        NewPnLSnapshot::new(
+            Utc::now(),
+            BigDecimal::from(0),
+            BigDecimal::from(0),
+            BigDecimal::from(0),
+        )
+        .with_mode("paper"),
     )
     .await
     .expect("pnl_snapshot upsert");

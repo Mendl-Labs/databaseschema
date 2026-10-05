@@ -26,10 +26,7 @@ pub async fn upsert_snapshot(
 ) -> Result<PnLSnapshot, diesel::result::Error> {
     diesel::insert_into(pnl_snapshots::table)
         .values(&snapshot)
-        .on_conflict((
-            pnl_snapshots::snapshot_at,
-            pnl_snapshots::mode,
-        ))
+        .on_conflict((pnl_snapshots::snapshot_at, pnl_snapshots::mode))
         .do_update()
         .set((
             pnl_snapshots::total_pnl.eq(&snapshot.total_pnl),
