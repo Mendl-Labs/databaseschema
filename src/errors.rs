@@ -22,7 +22,9 @@ pub enum DatabaseError {
 impl From<diesel::result::Error> for DatabaseError {
     fn from(error: diesel::result::Error) -> Self {
         match error {
-            diesel::result::Error::NotFound => DatabaseError::NotFound("Record not found".to_string()),
+            diesel::result::Error::NotFound => {
+                DatabaseError::NotFound("Record not found".to_string())
+            }
             diesel::result::Error::DatabaseError(kind, info) => {
                 DatabaseError::DatabaseError(format!("{:?}: {:?}", kind, info))
             }

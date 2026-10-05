@@ -2,18 +2,26 @@
 //! in the private schema).
 
 use crate::schema::*;
-use diesel::prelude::*;
-use diesel::pg::PgValue;
-use diesel::serialize::ToSql;
-use diesel::deserialize::FromSql;
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
+use diesel::deserialize::FromSql;
+use diesel::pg::PgValue;
+use diesel::prelude::*;
+use diesel::serialize::ToSql;
+use serde::{Deserialize, Serialize};
 use std::io::Write;
+use uuid::Uuid;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    diesel::deserialize::FromSqlRow,
+    diesel::expression::AsExpression,
+)]
 #[diesel(sql_type = crate::schema::sql_types::OrderStatus)]
 pub enum OrderStatus {
     Pending,
@@ -43,7 +51,10 @@ impl FromSql<crate::schema::sql_types::OrderStatus, diesel::pg::Pg> for OrderSta
 }
 
 impl ToSql<crate::schema::sql_types::OrderStatus, diesel::pg::Pg> for OrderStatus {
-    fn to_sql<'b>(&'b self, out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>) -> diesel::serialize::Result {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
         match *self {
             OrderStatus::Pending => out.write_all(b"pending")?,
             OrderStatus::Submitted => out.write_all(b"submitted")?,
@@ -58,15 +69,25 @@ impl ToSql<crate::schema::sql_types::OrderStatus, diesel::pg::Pg> for OrderStatu
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    diesel::deserialize::FromSqlRow,
+    diesel::expression::AsExpression,
+)]
 #[diesel(sql_type = crate::schema::sql_types::OrderSide)]
 pub enum OrderSide {
     Buy,
     Sell,
 }
 
-impl diesel::deserialize::FromSql<crate::schema::sql_types::OrderSide, diesel::pg::Pg> for OrderSide {
+impl diesel::deserialize::FromSql<crate::schema::sql_types::OrderSide, diesel::pg::Pg>
+    for OrderSide
+{
     fn from_sql(bytes: PgValue<'_>) -> diesel::deserialize::Result<Self> {
         match bytes.as_bytes() {
             b"buy" => Ok(OrderSide::Buy),
@@ -77,7 +98,10 @@ impl diesel::deserialize::FromSql<crate::schema::sql_types::OrderSide, diesel::p
 }
 
 impl diesel::serialize::ToSql<crate::schema::sql_types::OrderSide, diesel::pg::Pg> for OrderSide {
-    fn to_sql<'b>(&'b self, out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>) -> diesel::serialize::Result {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
         match *self {
             OrderSide::Buy => out.write_all(b"buy")?,
             OrderSide::Sell => out.write_all(b"sell")?,
@@ -86,8 +110,16 @@ impl diesel::serialize::ToSql<crate::schema::sql_types::OrderSide, diesel::pg::P
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    diesel::deserialize::FromSqlRow,
+    diesel::expression::AsExpression,
+)]
 #[diesel(sql_type = crate::schema::sql_types::OrderType)]
 pub enum OrderType {
     Market,
@@ -99,7 +131,9 @@ pub enum OrderType {
     Implementation,
 }
 
-impl diesel::deserialize::FromSql<crate::schema::sql_types::OrderType, diesel::pg::Pg> for OrderType {
+impl diesel::deserialize::FromSql<crate::schema::sql_types::OrderType, diesel::pg::Pg>
+    for OrderType
+{
     fn from_sql(bytes: PgValue<'_>) -> diesel::deserialize::Result<Self> {
         match bytes.as_bytes() {
             b"market" => Ok(OrderType::Market),
@@ -115,7 +149,10 @@ impl diesel::deserialize::FromSql<crate::schema::sql_types::OrderType, diesel::p
 }
 
 impl diesel::serialize::ToSql<crate::schema::sql_types::OrderType, diesel::pg::Pg> for OrderType {
-    fn to_sql<'b>(&'b self, out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>) -> diesel::serialize::Result {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
         match *self {
             OrderType::Market => out.write_all(b"market")?,
             OrderType::Limit => out.write_all(b"limit")?,
@@ -129,8 +166,16 @@ impl diesel::serialize::ToSql<crate::schema::sql_types::OrderType, diesel::pg::P
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    diesel::deserialize::FromSqlRow,
+    diesel::expression::AsExpression,
+)]
 #[diesel(sql_type = crate::schema::sql_types::TimeInForce)]
 pub enum TimeInForce {
     Ioc,
@@ -140,7 +185,9 @@ pub enum TimeInForce {
     Gtd,
 }
 
-impl diesel::deserialize::FromSql<crate::schema::sql_types::TimeInForce, diesel::pg::Pg> for TimeInForce {
+impl diesel::deserialize::FromSql<crate::schema::sql_types::TimeInForce, diesel::pg::Pg>
+    for TimeInForce
+{
     fn from_sql(bytes: PgValue<'_>) -> diesel::deserialize::Result<Self> {
         match bytes.as_bytes() {
             b"ioc" => Ok(TimeInForce::Ioc),
@@ -153,8 +200,13 @@ impl diesel::deserialize::FromSql<crate::schema::sql_types::TimeInForce, diesel:
     }
 }
 
-impl diesel::serialize::ToSql<crate::schema::sql_types::TimeInForce, diesel::pg::Pg> for TimeInForce {
-    fn to_sql<'b>(&'b self, out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>) -> diesel::serialize::Result {
+impl diesel::serialize::ToSql<crate::schema::sql_types::TimeInForce, diesel::pg::Pg>
+    for TimeInForce
+{
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
         match *self {
             TimeInForce::Ioc => out.write_all(b"ioc")?,
             TimeInForce::Fok => out.write_all(b"fok")?,
@@ -166,8 +218,16 @@ impl diesel::serialize::ToSql<crate::schema::sql_types::TimeInForce, diesel::pg:
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    diesel::deserialize::FromSqlRow,
+    diesel::expression::AsExpression,
+)]
 #[diesel(sql_type = crate::schema::sql_types::ExecutionUrgency)]
 pub enum ExecutionUrgency {
     Low,
@@ -176,7 +236,9 @@ pub enum ExecutionUrgency {
     Critical,
 }
 
-impl diesel::deserialize::FromSql<crate::schema::sql_types::ExecutionUrgency, diesel::pg::Pg> for ExecutionUrgency {
+impl diesel::deserialize::FromSql<crate::schema::sql_types::ExecutionUrgency, diesel::pg::Pg>
+    for ExecutionUrgency
+{
     fn from_sql(bytes: PgValue<'_>) -> diesel::deserialize::Result<Self> {
         match bytes.as_bytes() {
             b"low" => Ok(ExecutionUrgency::Low),
@@ -188,8 +250,13 @@ impl diesel::deserialize::FromSql<crate::schema::sql_types::ExecutionUrgency, di
     }
 }
 
-impl diesel::serialize::ToSql<crate::schema::sql_types::ExecutionUrgency, diesel::pg::Pg> for ExecutionUrgency {
-    fn to_sql<'b>(&'b self, out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>) -> diesel::serialize::Result {
+impl diesel::serialize::ToSql<crate::schema::sql_types::ExecutionUrgency, diesel::pg::Pg>
+    for ExecutionUrgency
+{
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
         match *self {
             ExecutionUrgency::Low => out.write_all(b"low")?,
             ExecutionUrgency::Medium => out.write_all(b"medium")?,
@@ -280,7 +347,17 @@ pub struct NewStrategyOrder {
     pub created_by: Option<String>,
 }
 
-#[derive(Debug, Clone, Queryable, Insertable, Identifiable, Associations, Selectable, Serialize, Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Queryable,
+    Insertable,
+    Identifiable,
+    Associations,
+    Selectable,
+    Serialize,
+    Deserialize,
+)]
 #[diesel(table_name = strategy_order_fills)]
 #[diesel(primary_key(id))]
 #[diesel(belongs_to(StrategyOrder, foreign_key = order_id))]
@@ -322,7 +399,17 @@ pub struct NewStrategyOrderFill {
     pub fill_timestamp: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Queryable, Insertable, Identifiable, Associations, Selectable, Serialize, Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Queryable,
+    Insertable,
+    Identifiable,
+    Associations,
+    Selectable,
+    Serialize,
+    Deserialize,
+)]
 #[diesel(table_name = strategy_order_state_changes)]
 #[diesel(primary_key(id))]
 #[diesel(belongs_to(StrategyOrder, foreign_key = order_id))]

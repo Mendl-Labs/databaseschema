@@ -26,6 +26,12 @@ pub enum FillSide {
 ///
 /// This function reads-then-writes; callers MUST wrap it inside a transaction
 /// to avoid lost updates under concurrent fills for the same key.
+// Thin wrapper delegating to `apply_fill_with_pair_tag` (below, already
+// allowed for the same lint) with the pair-tagging fields defaulted to
+// `None`. Only one call site exists; a params struct would mean this
+// function and its sibling disagree on calling convention for what is
+// otherwise the same parameter list, so this keeps them consistent.
+#[allow(clippy::too_many_arguments)]
 pub async fn apply_fill(
     conn: &mut AsyncPgConnection,
     deployment_id: Uuid,
@@ -36,7 +42,19 @@ pub async fn apply_fill(
     price: &BigDecimal,
     fees: &BigDecimal,
 ) -> Result<BigDecimal, diesel::result::Error> {
-    apply_fill_with_pair_tag(conn, deployment_id, exchange, symbol, side, qty, price, fees, None, None).await
+    apply_fill_with_pair_tag(
+        conn,
+        deployment_id,
+        exchange,
+        symbol,
+        side,
+        qty,
+        price,
+        fees,
+        None,
+        None,
+    )
+    .await
 }
 
 /// Same as [`apply_fill`], but tags a brand-new position row with
@@ -70,7 +88,11 @@ pub async fn apply_fill_with_pair_tag(
 
     let zero = BigDecimal::zero();
     let (qty_old, avg_old, realized_total_old) = match &existing {
-        Some(p) => (p.qty.clone(), p.avg_cost.clone(), p.realized_pnl_total.clone()),
+        Some(p) => (
+            p.qty.clone(),
+            p.avg_cost.clone(),
+            p.realized_pnl_total.clone(),
+        ),
         None => (zero.clone(), zero.clone(), zero.clone()),
     };
 
@@ -90,7 +112,11 @@ pub async fn apply_fill_with_pair_tag(
     } else {
         let abs_old = qty_old.abs();
         let abs_fill = signed_qty.abs();
-        let closing = if abs_fill <= abs_old { abs_fill.clone() } else { abs_old.clone() };
+        let closing = if abs_fill <= abs_old {
+            abs_fill.clone()
+        } else {
+            abs_old.clone()
+        };
 
         let realized = if old_is_long {
             &closing * (price - &avg_old)
